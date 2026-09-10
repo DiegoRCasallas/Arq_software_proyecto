@@ -75,8 +75,8 @@ function mostrarResultado(diagnostico) {
   mostrar("seccion-resultado");
 
   const badge = document.getElementById("indice-vitalidad");
-  badge.textContent = ETIQUETAS_INDICE[diagnostico.indice_vitalidad] || diagnostico.indice_vitalidad;
-  badge.className = `badge ${ESTILOS_POR_INDICE[diagnostico.indice_vitalidad] || ""}`;
+  badge.textContent = ETIQUETAS_INDICE[diagnostico.estado_planta] || diagnostico.estado_planta;
+  badge.className = `badge ${ESTILOS_POR_INDICE[diagnostico.estado_planta] || ""}`;
 
   actualizarEstado("estado-humedad", diagnostico.estados.humedad);
   actualizarEstado("estado-luz", diagnostico.estados.luz);

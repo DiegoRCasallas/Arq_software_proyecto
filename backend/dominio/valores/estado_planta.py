@@ -8,7 +8,7 @@ el dominio y en el documento de arquitectura.
 from enum import Enum
 
 
-class IndiceVitalidad(str, Enum):
+class EstadoPlanta(str, Enum):
     SALUDABLE = "SALUDABLE"
     EN_RIESGO = "EN_RIESGO"
     CRITICO = "CRITICO"

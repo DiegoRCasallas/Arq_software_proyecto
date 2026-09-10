@@ -31,7 +31,7 @@ def test_diagnostico_planta_saludable(client):
     respuesta = client.post("/diagnostico", json=payload)
     assert respuesta.status_code == 200
     cuerpo = respuesta.get_json()
-    assert cuerpo["indice_vitalidad"] == "SALUDABLE"
+    assert cuerpo["estado_planta"] == "SALUDABLE"
     assert cuerpo["estados"]["humedad"] == "OPTIMO"
     assert cuerpo["recomendaciones"] == []
 
@@ -41,7 +41,7 @@ def test_diagnostico_planta_en_riesgo(client):
     respuesta = client.post("/diagnostico", json=payload)
     assert respuesta.status_code == 200
     cuerpo = respuesta.get_json()
-    assert cuerpo["indice_vitalidad"] == "EN_RIESGO"
+    assert cuerpo["estado_planta"] == "EN_RIESGO"
     assert len(cuerpo["recomendaciones"]) == 1
 
 

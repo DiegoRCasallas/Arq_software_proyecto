@@ -4,7 +4,7 @@ from aplicacion.casos_uso.diagnosticar_planta import DiagnosticarPlantaUseCase
 from dominio.entidades.lectura_sensor import LecturaSensor
 from dominio.entidades.perfil_especie import PerfilEspecie
 from dominio.valores.rango_referencia import RangoReferencia
-from dominio.valores.indice_vitalidad import IndiceVitalidad
+from dominio.valores.estado_planta import EstadoPlanta
 from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregacionPorConteo
 from dominio.servicios.evaluador_planta import EvaluadorPlanta
 from dominio.excepciones.errores_dominio import EspecieNoEncontrada
@@ -48,13 +48,13 @@ def caso_de_uso(perfil_albahaca):
 def test_diagnostica_planta_saludable(caso_de_uso):
     lectura = LecturaSensor(humedad=55, luz=12000, temperatura=22)
     diagnostico = caso_de_uso.ejecutar("albahaca", lectura)
-    assert diagnostico.indice_vitalidad == IndiceVitalidad.SALUDABLE
+    assert diagnostico.estado_planta == EstadoPlanta.SALUDABLE
 
 
 def test_diagnostica_planta_en_riesgo(caso_de_uso):
     lectura = LecturaSensor(humedad=20, luz=12000, temperatura=22)
     diagnostico = caso_de_uso.ejecutar("albahaca", lectura)
-    assert diagnostico.indice_vitalidad == IndiceVitalidad.EN_RIESGO
+    assert diagnostico.estado_planta == EstadoPlanta.EN_RIESGO
 
 
 def test_especie_desconocida_propaga_excepcion_de_dominio(caso_de_uso):

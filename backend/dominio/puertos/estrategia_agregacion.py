@@ -9,11 +9,11 @@ EvaluadorPlanta se entere (LSP).
 from typing import Protocol
 
 from dominio.valores.estado_parametro import EstadoParametro
-from dominio.valores.indice_vitalidad import IndiceVitalidad
+from dominio.valores.estado_planta import EstadoPlanta
 
 
-class EstrategiaAgregacionVitalidad(Protocol):
-    def calcular(self, estados: dict[str, EstadoParametro]) -> IndiceVitalidad:
+class EstrategiaAgregacion(Protocol):
+    def calcular(self, estados: dict[str, EstadoParametro]) -> EstadoPlanta:
         """
         Recibe un mapeo {nombre_parametro: EstadoParametro} y devuelve
         el índice de vitalidad global.

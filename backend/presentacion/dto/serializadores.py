@@ -17,7 +17,7 @@ def serializar_diagnostico(diagnostico: DiagnosticoPlanta) -> dict:
             "luz": diagnostico.estado_luz.value,
             "temperatura": diagnostico.estado_temperatura.value,
         },
-        "indice_vitalidad": diagnostico.indice_vitalidad.value,
+        "estado_planta": diagnostico.estado_planta.value,
         "recomendaciones": diagnostico.recomendaciones,
     }
 

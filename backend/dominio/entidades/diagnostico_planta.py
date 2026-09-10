@@ -6,7 +6,7 @@ presentación traduce a JSON.
 from dataclasses import dataclass, field
 
 from dominio.valores.estado_parametro import EstadoParametro
-from dominio.valores.indice_vitalidad import IndiceVitalidad
+from dominio.valores.estado_planta import EstadoPlanta
 
 
 @dataclass(frozen=True)
@@ -14,7 +14,7 @@ class DiagnosticoPlanta:
     estado_humedad: EstadoParametro
     estado_luz: EstadoParametro
     estado_temperatura: EstadoParametro
-    indice_vitalidad: IndiceVitalidad
+    estado_planta: EstadoPlanta
     recomendaciones: list[str] = field(default_factory=list)
 
     def como_diccionario_estados(self) -> dict[str, EstadoParametro]:

@@ -9,20 +9,20 @@ resuelve RangoReferencia) ni CÓMO se agregan los estados (eso lo resuelve
 la estrategia inyectada) ni CÓMO se accede a la tabla de referencia (eso
 lo resuelve el puerto TablaReferencia, usado en la capa de aplicación).
 
-DIP: depende de la abstracción EstrategiaAgregacionVitalidad, inyectada
+DIP: depende de la abstracción EstrategiaAgregacion, inyectada
 por constructor, no de una implementación concreta.
 """
 from dominio.entidades.lectura_sensor import LecturaSensor
 from dominio.entidades.perfil_especie import PerfilEspecie
 from dominio.entidades.diagnostico_planta import DiagnosticoPlanta
-from dominio.puertos.estrategia_agregacion_vitalidad import EstrategiaAgregacionVitalidad
+from dominio.puertos.estrategia_agregacion import EstrategiaAgregacion
 from dominio.servicios.generador_recomendaciones import GeneradorRecomendaciones
 
 
 class EvaluadorPlanta:
     def __init__(
         self,
-        estrategia_agregacion: EstrategiaAgregacionVitalidad,
+        estrategia_agregacion: EstrategiaAgregacion,
         generador_recomendaciones: GeneradorRecomendaciones | None = None,
     ):
         self._estrategia = estrategia_agregacion
@@ -46,6 +46,6 @@ class EvaluadorPlanta:
             estado_humedad=estado_humedad,
             estado_luz=estado_luz,
             estado_temperatura=estado_temperatura,
-            indice_vitalidad=indice,
+            estado_planta=indice,
             recomendaciones=recomendaciones,
         )
