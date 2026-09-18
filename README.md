@@ -1,4 +1,4 @@
-# Matera Inteligente — Núcleo de Diagnóstico
+# Matera Inteligente: Núcleo de Diagnóstico
 
 ## Estructura
 
