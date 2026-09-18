@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matera Inteligente — Diagnóstico</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <h1>🌱 Matera Inteligente</h1>
+    <p class="subtitulo">Diagnóstico del estado de tu planta</p>
+  </header>
+
+  <main>
+    <section class="tarjeta" id="seccion-formulario">
+      <h2>Nueva medición</h2>
+      <form id="form-diagnostico">
+        <label for="especie">Especie</label>
+        <select id="especie" name="especie" required>
+          <option value="" disabled selected>Cargando especies...</option>
+        </select>
+
+        <label for="humedad">Humedad del sustrato (%)</label>
+        <input type="number" id="humedad" name="humedad" step="any" required placeholder="Ej: 55" />
+
+        <label for="temperatura">Temperatura (°C)</label>
+        <input type="number" id="temperatura" name="temperatura" step="any" required placeholder="Ej: 22" />
+
+        <label for="luz">Nivel de luz (lux)</label>
+        <input type="number" id="luz" name="luz" step="any" required placeholder="Ej: 12000" />
+
+        <button type="submit" id="btn-diagnosticar">Diagnosticar</button>
+      </form>
+    </section>
+
+    <section class="tarjeta" id="seccion-resultado" hidden>
+      <h2>Resultado</h2>
+      <div id="indice-vitalidad" class="badge"></div>
+
+      <div class="estados">
+        <div class="estado-item">
+          <span class="etiqueta">Humedad</span>
+          <span id="estado-humedad" class="valor-estado"></span>
+        </div>
+        <div class="estado-item">
+          <span class="etiqueta">Luz</span>
+          <span id="estado-luz" class="valor-estado"></span>
+        </div>
+        <div class="estado-item">
+          <span class="etiqueta">Temperatura</span>
+          <span id="estado-temperatura" class="valor-estado"></span>
+        </div>
+      </div>
+
+      <div id="recomendaciones-contenedor">
+        <h3>Recomendaciones</h3>
+        <ul id="lista-recomendaciones"></ul>
+      </div>
+    </section>
+
+    <section class="tarjeta" id="seccion-error" hidden>
+      <p id="mensaje-error" class="mensaje-error"></p>
+    </section>
+
+    <section class="tarjeta" id="seccion-especies">
+      <h2>Especies soportadas</h2>
+      <div id="lista-especies" class="lista-especies">
+        <p>Cargando especies...</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Proyecto académico — Núcleo de diagnóstico de matera inteligente</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="api.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

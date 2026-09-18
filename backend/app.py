@@ -8,15 +8,23 @@ Ningún módulo de dominio ni de aplicación debería importar nada de aquí.
 from flask import Flask
 from flask_cors import CORS
 
+from infraestructura.config.contenedor import Contenedor
+from presentacion.controladores.diagnostico_controller import crear_diagnostico_blueprint
+from presentacion.controladores.especies_controller import crear_especies_blueprint
+
 
 def crear_app() -> Flask:
     app = Flask(__name__)
     CORS(app)  # RA7: permite que el frontend (otro origen) consuma la API
 
-    # Aquí se registrarán los blueprints/controladores de la capa de
-    # presentación a medida que se vayan construyendo, por ejemplo:
-    # from presentacion.controladores.diagnostico_controller import diagnostico_bp
-    # app.register_blueprint(diagnostico_bp)
+    contenedor = Contenedor()
+
+    app.register_blueprint(
+        crear_diagnostico_blueprint(contenedor.diagnosticar_planta_use_case)
+    )
+    app.register_blueprint(
+        crear_especies_blueprint(contenedor.listar_especies_use_case)
+    )
 
     @app.get("/health")
     def health():

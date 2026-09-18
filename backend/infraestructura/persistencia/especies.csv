@@ -1,0 +1,6 @@
+especie,humedad_min,humedad_optimo_min,humedad_optimo_max,humedad_max,luz_min,luz_optimo_min,luz_optimo_max,luz_max,temperatura_min,temperatura_optimo_min,temperatura_optimo_max,temperatura_max,fuente
+albahaca,0,40,70,100,0,8000,20000,50000,-10,18,27,50,"UMN Extension - Growing basil in home gardens; Soltech Basil Plant Care"
+poto,0,30,60,100,0,1000,10000,30000,-5,15,29,45,"Missouri Botanical Garden - Epipremnum aureum; The Sill - Pothos Care Guide"
+suculenta,0,10,40,100,0,15000,40000,80000,-5,10,32,50,"Missouri Botanical Garden - Succulent care guide; The Old Farmer's Almanac - Succulents"
+helecho,0,50,80,100,0,1000,8000,20000,-5,16,24,40,"Missouri Botanical Garden - Nephrolepis exaltata; RHS - Growing ferns"
+orquidea,0,35,65,100,0,10000,25000,40000,5,18,27,40,"American Orchid Society - Growing basics; RHS - Orchid care"

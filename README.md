@@ -33,6 +33,19 @@ cd backend
 pytest
 ```
 
+## Cómo ejecutar el frontend
+
+El frontend es HTML/CSS/JS estático, servido por separado del backend (RA2).
+Con el backend corriendo en `http://localhost:5000`, en otra terminal:
+
+```bash
+cd frontend
+python3 -m http.server 8080
+```
+
+Abre `http://localhost:8080` en el navegador. Si tu backend corre en otro
+host o puerto, ajusta `API_BASE_URL` en `frontend/config.js`.
+
 ## Endpoints planeados
 
 | Método | Ruta          | Descripción                                  |
