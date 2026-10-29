@@ -1,13 +1,18 @@
 import os
 from flask import Flask, jsonify
+from flask_cors import CORS
 from presentacion.controladores.mediciones_controller import dispositivos_bp
 from infraestructura.persistencia.sql.modelos import db
 from infraestructura.config.contenedor import contenedor_app
 
-def create_app():
+def crear_app():
     app = Flask(__name__)
+    CORS(app)
     
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///matera.db')
+    database_url = os.getenv('DATABASE_URL', 'sqlite:///matera.db')
+    if database_url.startswith("postgres://"):
+        database_url = database_url.replace("postgres://", "postgresql://", 1)
+    app.config['SQLALCHEMY_DATABASE_URI'] = database_url
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
     db.init_app(app)
@@ -18,12 +23,18 @@ def create_app():
 
     app.register_blueprint(dispositivos_bp)
 
+    @app.get("/health")
+    def health():
+        return jsonify({"status": "ok"}), 200
+
     @app.errorhandler(404)
     def no_encontrado(e):
         return jsonify({"error": "RUTA_NO_ENCONTRADA", "mensaje": "El endpoint solicitado no existe"}), 404
 
     return app
 
+create_app = crear_app
+
 if __name__ == '__main__':
-    app = create_app()
+    app = crear_app()
     app.run(debug=True, host='0.0.0.0', port=5000)
