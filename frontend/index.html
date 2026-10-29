@@ -1,82 +1,81 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Matera Inteligente — Diagnóstico</title>
-  <link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalles de la Planta - Plant Tech</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header>
-    <h1>🌱 Matera Inteligente</h1>
-    <p class="subtitulo">Diagnóstico del estado de tu planta</p>
-  </header>
+    <!-- Encabezado -->
+    <header class="top-header">
+        <button id="btnBack" class="icon-button">←</button>
+        <h1>Detalles de la planta</h1>
+    </header>
 
-  <main>
-    <section class="tarjeta" id="seccion-formulario">
-      <h2>Nueva medición</h2>
-      <form id="form-diagnostico">
-        <label for="especie">Especie</label>
-        <select id="especie" name="especie" required>
-          <option value="" disabled selected>Cargando especies...</option>
-        </select>
+    <main class="app-container">
+        <!-- Tarjeta de perfil de la planta -->
+        <section class="plant-profile-card">
+            <div class="plant-image-placeholder">
+                <!-- Aquí irá la imagen de la planta -->
+                <span>[Foto]</span>
+            </div>
+            <div class="plant-summary">
+                <h2 id="plantName">My Lovely Plant</h2>
+                <ul>
+                    <li><strong>Especie:</strong> <span id="plantSpecies">Cinta</span></li>
+                    <li><strong>Diagnósticos:</strong> <span id="plantDiagnosticsCount">4</span></li>
+                </ul>
+            </div>
+        </section>
 
-        <label for="humedad">Humedad del sustrato (%)</label>
-        <input type="number" id="humedad" name="humedad" step="any" required placeholder="Ej: 55" />
+        <!-- Última Medición -->
+        <section class="latest-measurement">
+            <h3>Última medición</h3>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <span class="icon">🌡️</span>
+                    <span>Temperatura</span>
+                    <strong id="valTemp">24°C</strong>
+                </div>
+                <div class="metric-card">
+                    <span class="icon">💧</span>
+                    <span>Humedad</span>
+                    <strong id="valHum">60%</strong>
+                </div>
+                <div class="metric-card">
+                    <span class="icon">☀️</span>
+                    <span>Luz</span>
+                    <strong id="valLight">Alta</strong>
+                </div>
+            </div>
+        </section>
 
-        <label for="temperatura">Temperatura (°C)</label>
-        <input type="number" id="temperatura" name="temperatura" step="any" required placeholder="Ej: 22" />
+        <!-- Recomendaciones -->
+        <section class="recommendations">
+            <h3>Recomendaciones</h3>
+            <ul id="recommendationList">
+                <li>Regar cada 3-4 días</li>
+                <li>Proporcionar luz brillante e indirecta</li>
+                <li>Fertilizar mensualmente durante la temporada de crecimiento</li>
+            </ul>
+        </section>
 
-        <label for="luz">Nivel de luz (lux)</label>
-        <input type="number" id="luz" name="luz" step="any" required placeholder="Ej: 12000" />
-
-        <button type="submit" id="btn-diagnosticar">Diagnosticar</button>
-      </form>
-    </section>
-
-    <section class="tarjeta" id="seccion-resultado" hidden>
-      <h2>Resultado</h2>
-      <div id="indice-vitalidad" class="badge"></div>
-
-      <div class="estados">
-        <div class="estado-item">
-          <span class="etiqueta">Humedad</span>
-          <span id="estado-humedad" class="valor-estado"></span>
+        <!-- Botones de Acción -->
+        <div class="action-buttons">
+            <button id="btnDiagnose" class="btn btn-primary">Diagnosticar</button>
+            <button id="btnConnect" class="btn btn-secondary">Conectar a Internet</button>
         </div>
-        <div class="estado-item">
-          <span class="etiqueta">Luz</span>
-          <span id="estado-luz" class="valor-estado"></span>
-        </div>
-        <div class="estado-item">
-          <span class="etiqueta">Temperatura</span>
-          <span id="estado-temperatura" class="valor-estado"></span>
-        </div>
-      </div>
+    </main>
 
-      <div id="recomendaciones-contenedor">
-        <h3>Recomendaciones</h3>
-        <ul id="lista-recomendaciones"></ul>
-      </div>
-    </section>
+    <!-- Navegación Inferior -->
+    <nav class="bottom-nav">
+        <button class="nav-item active">Mis plantas</button>
+        <button class="nav-item">Añadir Sensor</button>
+        <button class="nav-item">Ajustes</button>
+    </nav>
 
-    <section class="tarjeta" id="seccion-error" hidden>
-      <p id="mensaje-error" class="mensaje-error"></p>
-    </section>
-
-    <section class="tarjeta" id="seccion-especies">
-      <h2>Especies soportadas</h2>
-      <div id="lista-especies" class="lista-especies">
-        <p>Cargando especies...</p>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <p>Proyecto académico — Núcleo de diagnóstico de matera inteligente</p>
-  </footer>
-
-  <script src="config.js"></script>
-  <script src="api.js"></script>
-  <script src="app.js"></script>
+    <script src="app.js"></script>
+    <script src="api.js"></script>
 </body>
 </html>

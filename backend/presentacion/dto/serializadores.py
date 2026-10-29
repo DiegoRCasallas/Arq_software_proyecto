@@ -10,15 +10,17 @@ from dominio.entidades.perfil_especie import PerfilEspecie
 from dominio.valores.rango_referencia import RangoReferencia
 
 
-def serializar_diagnostico(diagnostico: DiagnosticoPlanta) -> dict:
+def serializar_diagnostico(diagnostico) -> dict:
     return {
-        "estados": {
-            "humedad": diagnostico.estado_humedad.value,
-            "luz": diagnostico.estado_luz.value,
-            "temperatura": diagnostico.estado_temperatura.value,
+        # Si estado_planta es un Enum, extraemos su nombre (.name), de lo contrario lo volvemos string
+        "estado_general": diagnostico.estado_planta.name if hasattr(diagnostico.estado_planta, 'name') else str(diagnostico.estado_planta),
+        
+        "detalle_parametros": {
+            parametro: estado.name if hasattr(estado, 'name') else str(estado)
+            for parametro, estado in diagnostico.estados.items()
         },
-        "estado_planta": diagnostico.estado_planta.value,
-        "recomendaciones": diagnostico.recomendaciones,
+        
+        "recomendaciones": diagnostico.recomendaciones
     }
 
 
