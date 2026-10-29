@@ -1,11 +1,11 @@
-# Importamos el dominio y casos de uso
+import os
 from dominio.servicios.evaluador_planta import EvaluadorPlanta
 from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregacionPorConteo
 from dominio.servicios.generador_recomendaciones import GeneradorRecomendaciones
 from aplicacion.casos_uso.registrar_medicion import RegistrarMedicion
-
-# Aquí importaremos los adaptadores (SQL, CSV, JWT) a medida que los construyamos
-# Por ahora usaremos "None" o clases falsas rápidas (Mocks) solo para que la app pueda arrancar y no de error de importación.
+from infraestructura.persistencia.sql.repositorio_mediciones_sql import RepositorioMedicionesSQL
+from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenciaSQL
+from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenciaCSV
 
 class Contenedor:
     def __init__(self):
@@ -14,14 +14,21 @@ class Contenedor:
         generador = GeneradorRecomendaciones()
         self.evaluador = EvaluadorPlanta(estrategia, generador)
 
-        # 2. Instanciar Adaptadores de Salida (Infraestructura)
-        # TODO: Reemplazar estos "None" por las verdaderas clases SQL/CSV cuando las hagamos
+        # 2. Configurar Adaptadores de Salida (Infraestructura)
+        self.repo_mediciones = RepositorioMedicionesSQL()
+        
+        # Mocks temporales para lo que aún no hemos programado
         self.repo_plantas = None 
         self.hasher = None
-        self.tabla_referencia = None
-        self.repo_mediciones = None
+        
+        # R4: Intercambiabilidad por configuración (Sin tocar el dominio)
+        tipo_persistencia = os.getenv('TIPO_PERSISTENCIA', 'SQL')
+        if tipo_persistencia == 'CSV':
+            self.tabla_referencia = TablaReferenciaCSV()
+        else:
+            self.tabla_referencia = TablaReferenciaSQL()
 
-        # 3. Ensamblar los Casos de Uso inyectando las dependencias
+        # 3. Ensamblar los Casos de Uso
         self.registrar_medicion_use_case = RegistrarMedicion(
             repo_plantas=self.repo_plantas,
             hasher_tokens=self.hasher,
@@ -30,6 +37,5 @@ class Contenedor:
             repo_mediciones=self.repo_mediciones
         )
 
-# Creamos una única instancia global del contenedor para que Flask la consuma
 contenedor_app = Contenedor()
 registrar_medicion_use_case = contenedor_app.registrar_medicion_use_case
