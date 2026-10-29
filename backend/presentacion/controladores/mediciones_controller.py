@@ -22,24 +22,23 @@ def registrar_medicion_endpoint(dispositivo_id):
         return jsonify({"error": "FORMATO_INVALIDO", "mensaje": "El JSON debe incluir 'valores'"}), 400
         
     try:
-        # 3. Transformar de HTTP/JSON a objetos puros del dominio (Capa de Presentación -> Dominio)
+        # 3. Transformar de HTTP/JSON a objetos puros del dominio
         medicion = construir_medicion(datos_json)
         
-        # 4. Obtener el caso de uso instanciado desde el contenedor de composición
-        # (Esto evita instanciar dependencias concretas aquí directamente)
-        from config.contenedor import registrar_medicion_use_case
+        # 4. Obtener el caso de uso instanciado desde el contenedor de composición (RUTA CORREGIDA)
+        from infraestructura.config.contenedor import registrar_medicion_use_case
         
         # 5. Entregar el control al dominio
         diagnostico = registrar_medicion_use_case.ejecutar(dispositivo_id, token_dispositivo, medicion)
         
-        # 6. Transformar la respuesta del dominio a un diccionario seguro para JSON
+        # 6. Transformar la respuesta
         respuesta = serializar_diagnostico(diagnostico)
         
         return jsonify(respuesta), 201
         
     except ErrorDominio as e:
-        # Errores controlados por las reglas de negocio (ej. Token erróneo, planta no existe)
         return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
     except Exception as e:
-        # Errores inesperados o de servidor
+        # Imprimimos el error real en la consola de Flask para poder depurar
+        print(f"CRASH INTERNO: {e}") 
         return jsonify({"error": "ERROR_INTERNO", "mensaje": "Fallo procesando la medición"}), 500
