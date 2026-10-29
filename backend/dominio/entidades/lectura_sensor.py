@@ -10,11 +10,11 @@ pero la lectura en sí es independiente de la especie: los mismos tres
 números podrían evaluarse contra perfiles distintos. Mantenerlos separados
 respeta SRP: LecturaSensor solo representa "lo que midió el sensor".
 """
-from dataclasses import dataclass
+from datetime import datetime
+from typing import Dict, Optional
 
-
-@dataclass(frozen=True)
-class LecturaSensor:
-    humedad: float
-    luz: float
-    temperatura: float
+class Medicion:
+    def __init__(self, planta_id: Optional[int], fecha: datetime, valores: Dict[str, float]):
+        self.planta_id = planta_id
+        self.fecha = fecha
+        self.valores = valores
