@@ -6,6 +6,8 @@ from aplicacion.casos_uso.registrar_medicion import RegistrarMedicion
 from infraestructura.persistencia.sql.repositorio_mediciones_sql import RepositorioMedicionesSQL
 from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenciaSQL
 from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenciaCSV
+from infraestructura.persistencia.sql.repositorio_plantas_sql import RepositorioPlantasSQL
+from infraestructura.seguridad.hasher_werkzeug import HasherWerkzeug
 
 class Contenedor:
     def __init__(self):
@@ -16,12 +18,10 @@ class Contenedor:
 
         # 2. Configurar Adaptadores de Salida (Infraestructura)
         self.repo_mediciones = RepositorioMedicionesSQL()
+        self.repo_plantas = RepositorioPlantasSQL()
+        self.hasher = HasherWerkzeug()
         
-        # Mocks temporales para lo que aún no hemos programado
-        self.repo_plantas = None 
-        self.hasher = None
-        
-        # R4: Intercambiabilidad por configuración (Sin tocar el dominio)
+        # Intercambiabilidad R4
         tipo_persistencia = os.getenv('TIPO_PERSISTENCIA', 'SQL')
         if tipo_persistencia == 'CSV':
             self.tabla_referencia = TablaReferenciaCSV()
