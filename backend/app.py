@@ -5,34 +5,23 @@ Este archivo pertenece a la capa de infraestructura/arranque: es el único
 lugar donde se conocen Flask, CORS y el "cableado" (wiring) entre capas.
 Ningún módulo de dominio ni de aplicación debería importar nada de aquí.
 """
-from flask import Flask
-from flask_cors import CORS
+from flask import Flask, jsonify
+from presentacion.controladores.mediciones_controller import dispositivos_bp
 
-from infraestructura.config.contenedor import Contenedor
-from presentacion.controladores.diagnostico_controller import crear_diagnostico_blueprint
-from presentacion.controladores.especies_controller import crear_especies_blueprint
-
-
-def crear_app() -> Flask:
+def create_app():
     app = Flask(__name__)
-    CORS(app)  # RA7: permite que el frontend (otro origen) consuma la API
 
-    contenedor = Contenedor()
+    # Registrar las rutas (Blueprints)
+    app.register_blueprint(dispositivos_bp)
 
-    app.register_blueprint(
-        crear_diagnostico_blueprint(contenedor.diagnosticar_planta_use_case)
-    )
-    app.register_blueprint(
-        crear_especies_blueprint(contenedor.listar_especies_use_case)
-    )
-
-    @app.get("/health")
-    def health():
-        return {"status": "ok"}, 200
+    # Manejador global para rutas no encontradas
+    @app.errorhandler(404)
+    def no_encontrado(e):
+        return jsonify({"error": "RUTA_NO_ENCONTRADA", "mensaje": "El endpoint solicitado no existe"}), 404
 
     return app
 
-
-if __name__ == "__main__":
-    app = crear_app()
-    app.run(debug=True, port=5000)
+if __name__ == '__main__':
+    app = create_app()
+    # Ejecutamos el servidor en el puerto 5000
+    app.run(debug=True, host='0.0.0.0', port=5000)

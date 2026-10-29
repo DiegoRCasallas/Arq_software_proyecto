@@ -1,35 +1,35 @@
-"""
-Composition root: aquí, y solo aquí, se decide QUÉ implementación
-concreta usa cada abstracción (DIP en acción).
-
-Si mañana se reemplaza TablaReferenciaCSV por TablaReferenciaBaseDatos,
-el único cambio necesario en todo el proyecto es esta función.
-"""
-from pathlib import Path
-
-from infraestructura.persistencia.tabla_referencia_csv import TablaReferenciaCSV
-from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregacionPorConteo
+# Importamos el dominio y casos de uso
 from dominio.servicios.evaluador_planta import EvaluadorPlanta
-from aplicacion.casos_uso.diagnosticar_planta import DiagnosticarPlantaUseCase
-from aplicacion.casos_uso.listar_especies import ListarEspeciesUseCase
+from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregacionPorConteo
+from dominio.servicios.generador_recomendaciones import GeneradorRecomendaciones
+from aplicacion.casos_uso.registrar_medicion import RegistrarMedicion
 
-_RUTA_CSV_ESPECIES = Path(__file__).parent.parent / "persistencia" / "especies.csv"
-
+# Aquí importaremos los adaptadores (SQL, CSV, JWT) a medida que los construyamos
+# Por ahora usaremos "None" o clases falsas rápidas (Mocks) solo para que la app pueda arrancar y no de error de importación.
 
 class Contenedor:
-    """Agrupa las instancias ya conectadas, listas para inyectar en los
-    controladores. Un enfoque simple de inyección de dependencias manual,
-    suficiente para el tamaño de este proyecto."""
-
     def __init__(self):
-        self.tabla_referencia = TablaReferenciaCSV(_RUTA_CSV_ESPECIES)
+        # 1. Instanciar Servicios de Dominio
         estrategia = EstrategiaAgregacionPorConteo()
-        self.evaluador_planta = EvaluadorPlanta(estrategia_agregacion=estrategia)
+        generador = GeneradorRecomendaciones()
+        self.evaluador = EvaluadorPlanta(estrategia, generador)
 
-        self.diagnosticar_planta_use_case = DiagnosticarPlantaUseCase(
+        # 2. Instanciar Adaptadores de Salida (Infraestructura)
+        # TODO: Reemplazar estos "None" por las verdaderas clases SQL/CSV cuando las hagamos
+        self.repo_plantas = None 
+        self.hasher = None
+        self.tabla_referencia = None
+        self.repo_mediciones = None
+
+        # 3. Ensamblar los Casos de Uso inyectando las dependencias
+        self.registrar_medicion_use_case = RegistrarMedicion(
+            repo_plantas=self.repo_plantas,
+            hasher_tokens=self.hasher,
             tabla_referencia=self.tabla_referencia,
-            evaluador=self.evaluador_planta,
+            evaluador_planta=self.evaluador,
+            repo_mediciones=self.repo_mediciones
         )
-        self.listar_especies_use_case = ListarEspeciesUseCase(
-            tabla_referencia=self.tabla_referencia,
-        )
+
+# Creamos una única instancia global del contenedor para que Flask la consuma
+contenedor_app = Contenedor()
+registrar_medicion_use_case = contenedor_app.registrar_medicion_use_case
