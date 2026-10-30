@@ -57,12 +57,6 @@
     <div id="pantalla-detalles" class="pantalla">
         <div class="header-verde">
             <span style="cursor: pointer;" onclick="mostrarPantalla('mis-plantas')">← Detalles de la planta</span>
-            <button class="menu-puntos" id="btn-menu-puntos">⋮</button>
-        </div>
-        
-        <div id="menu-desplegable" style="display:none; background:white; position:absolute; right:20px; top:65px; padding:10px; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10;">
-            <button id="btn-ver-historial" style="display:block; border:none; background:none; text-align:left; width:100%; padding:10px; font-size: 16px;">Historial de Diagnósticos</button>
-            <button style="display:block; border:none; background:none; text-align:left; width:100%; padding:10px; color:red; font-size: 16px;">Borrar planta</button>
         </div>
 
         <div class="tarjeta" style="display: flex; align-items: center; margin-bottom: 25px;">
@@ -75,18 +69,24 @@
 
         <h3 style="margin-bottom: 15px;">Última medición</h3>
         <div id="estado-actual" class="grid-mediciones">
-            <!-- Renderizado dinámico desde app.js -->
+            <!-- Renderizado dinámico -->
         </div>
 
         <h3 style="margin-bottom: 15px;">Recomendaciones</h3>
         <div id="recomendaciones-actuales" class="tarjeta" style="line-height: 1.6; color: #333;">
-            <!-- Renderizado dinámico desde app.js -->
+            <!-- Renderizado dinámico -->
         </div>
 
         <button class="btn-primario" onclick="alert('Medición solicitada al hardware')">Diagnosticar</button>
         <button class="btn-secundario" onclick="alert('Redirigiendo a Conectar a Internet')">Conectar a internet</button>
+        
+        <!-- Nuevos botones visibles -->
+        <div style="display: flex; gap: 10px; margin-top: 15px;">
+            <button id="btn-ver-historial" class="btn-secundario" style="background-color: #f39c12; margin-top: 0; padding: 12px;">Historial</button>
+            <button class="btn-secundario" style="background-color: #e74c3c; margin-top: 0; padding: 12px;" onclick="alert('Funcionalidad de borrar planta (Fase futura)')">Borrar planta</button>
+        </div>
     </div>
-
+    
     <!-- PANTALLA: Historial -->
     <div id="pantalla-historial" class="pantalla">
         <button onclick="mostrarPantalla('detalles')" style="margin-bottom:15px; background:none; border:none; color:#008f39; font-size:16px; cursor:pointer;">← Volver</button>

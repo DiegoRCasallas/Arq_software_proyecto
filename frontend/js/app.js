@@ -87,10 +87,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 4. Menú de 3 puntos y navegación a Historial
-    const menuDesplegable = document.getElementById('menu-desplegable');
-    document.getElementById('btn-menu-puntos').addEventListener('click', () => {
-        menuDesplegable.style.display = menuDesplegable.style.display === 'none' ? 'block' : 'none';
+    // 4. Navegación a Historial
+    document.getElementById('btn-ver-historial').addEventListener('click', async () => {
+        mostrarPantalla('historial');
+        
+        const contenedor = document.getElementById('contenedor-historial');
+        contenedor.innerHTML = 'Cargando historial...';
+        
+        try {
+            const historial = await API.getHistorial(1);
+            contenedor.innerHTML = '';
+            historial.forEach(m => {
+                contenedor.innerHTML += `
+                    <div class="tarjeta">
+                        <p><strong>${new Date(m.fecha).toLocaleString()}</strong></p>
+                        <p>Temp: ${m.valores.temperatura}°C | Hum: ${m.valores.humedad}% | Luz: ${m.valores.luz}lux</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            contenedor.innerHTML = `<p style="color:red;">Error al cargar: ${error.message}</p>`;
+        }
     });
 
     document.getElementById('btn-ver-historial').addEventListener('click', async () => {
