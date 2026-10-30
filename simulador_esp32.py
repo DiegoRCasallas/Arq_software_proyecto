@@ -5,7 +5,8 @@ import requests
 # Configuración
 DISPOSITIVO_ID = "ESP32_TEST_001"
 TOKEN = "token_secreto_123"
-URL_API = f"http://localhost:5000/api/v1/dispositivos/{DISPOSITIVO_ID}/mediciones"
+#URL_API = f"http://localhost:5000/api/v1/dispositivos/{DISPOSITIVO_ID}/mediciones"
+URL_API = f"https://arqsoftwareproyecto-production.up.railway.app/api/v1/dispositivos/ESP32_TEST_001/mediciones"
 INTERVALO_SEGUNDOS = 5
 
 def generar_datos_normales():
