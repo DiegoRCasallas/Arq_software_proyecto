@@ -20,7 +20,7 @@ class EspecieNoEncontrada(ErrorDominio):
 
 
 class ParametroAusente(ErrorDominio):
-    """Falta un parámetro obligatorio en la medición (humedad, luz o temperatura)."""
+    """Falta un parámetro obligatorio (p. ej. un parámetro del perfil de la especie que la medición no trae)."""
 
     def __init__(self, nombre_parametro: str):
         self.nombre_parametro = nombre_parametro
@@ -54,3 +54,27 @@ class ValorFueraDeRangoFisico(ErrorDominio):
             f"El valor de '{nombre_parametro}' ({valor}) está fuera del rango "
             f"físicamente posible [{minimo_fisico}, {maximo_fisico}]."
         )
+
+
+class ParametroDesconocido(ErrorDominio):
+    """La medición trae un parámetro que la especie de la planta no define."""
+
+    def __init__(self, nombre_parametro: str, especie: str):
+        self.nombre_parametro = nombre_parametro
+        self.especie = especie
+        super().__init__(
+            f"El parámetro '{nombre_parametro}' no es medible para la especie '{especie}'."
+        )
+
+
+class DispositivoNoAutorizado(ErrorDominio):
+    """
+    El dispositivo no existe o su token no coincide.
+
+    Es deliberadamente UNA sola excepción con UN solo mensaje para ambos casos:
+    distinguirlos le permitiría a un atacante descubrir qué IDs de dispositivo
+    existen.
+    """
+
+    def __init__(self):
+        super().__init__("Dispositivo o token inválido.")

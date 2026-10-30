@@ -1,4 +1,4 @@
-from dominio.entidades.lectura_sensor import Medicion
+from dominio.entidades.medicion import Medicion
 from dominio.entidades.perfil_especie import PerfilEspecie
 from dominio.entidades.diagnostico_planta import DiagnosticoPlanta
 

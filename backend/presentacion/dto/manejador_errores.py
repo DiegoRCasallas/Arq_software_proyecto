@@ -10,26 +10,33 @@ Estructura de error uniforme:
     "error": "<CODIGO>",
     "mensaje": "<texto legible>"
 }
+
+Una ErrorDominio sin mapeo específico se trata como error de negocio genérico
+(400), nunca como 500: un 500 significa "falló el servidor", no "la petición
+no es aceptable".
 """
 from dominio.excepciones.errores_dominio import (
+    DispositivoNoAutorizado,
+    ErrorDominio,
     EspecieNoEncontrada,
     ParametroAusente,
-    ValorNoNumerico,
+    ParametroDesconocido,
     ValorFueraDeRangoFisico,
-    ErrorDominio,
+    ValorNoNumerico,
 )
 
-_MAPEO_CODIGO_HTTP = {
-    EspecieNoEncontrada: ("ESPECIE_NO_ENCONTRADA", 404),
-    ParametroAusente: ("PARAMETRO_AUSENTE", 400),
-    ValorNoNumerico: ("VALOR_NO_NUMERICO", 400),
-    ValorFueraDeRangoFisico: ("VALOR_FUERA_DE_RANGO_FISICO", 400),
-}
+_MAPEO_CODIGO_HTTP = (
+    (DispositivoNoAutorizado, "DISPOSITIVO_NO_AUTORIZADO", 401),
+    (EspecieNoEncontrada, "ESPECIE_NO_ENCONTRADA", 404),
+    (ParametroAusente, "PARAMETRO_AUSENTE", 400),
+    (ParametroDesconocido, "PARAMETRO_DESCONOCIDO", 400),
+    (ValorNoNumerico, "VALOR_NO_NUMERICO", 400),
+    (ValorFueraDeRangoFisico, "VALOR_FUERA_DE_RANGO_FISICO", 400),
+)
 
 
 def manejar_error_dominio(excepcion: ErrorDominio) -> tuple[dict, int]:
-    codigo, status_http = _MAPEO_CODIGO_HTTP.get(
-        type(excepcion), ("ERROR_INTERNO", 500)
-    )
-    cuerpo = {"error": codigo, "mensaje": str(excepcion)}
-    return cuerpo, status_http
+    for tipo, codigo, status_http in _MAPEO_CODIGO_HTTP:
+        if isinstance(excepcion, tipo):
+            return {"error": codigo, "mensaje": str(excepcion)}, status_http
+    return {"error": "ERROR_DE_NEGOCIO", "mensaje": str(excepcion)}, 400

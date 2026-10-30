@@ -6,6 +6,7 @@ from infraestructura.persistencia.sql.modelos import db
 from infraestructura.config.contenedor import contenedor_app
 from presentacion.controladores.usuarios_controller import usuarios_bp
 from presentacion.controladores.plantas_controller import plantas_bp
+from presentacion.controladores.especies_controller import crear_especies_blueprint
 
 def crear_app():
     app = Flask(__name__)
@@ -26,6 +27,10 @@ def crear_app():
     app.register_blueprint(dispositivos_bp)
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(plantas_bp)
+    app.register_blueprint(
+        crear_especies_blueprint(contenedor_app.listar_especies_use_case),
+        url_prefix="/api/v1",
+    )
 
     @app.get("/health")
     def health():

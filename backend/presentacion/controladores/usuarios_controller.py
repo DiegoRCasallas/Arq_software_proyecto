@@ -6,9 +6,11 @@ usuarios_bp = Blueprint('usuarios', __name__, url_prefix='/api/v1/usuarios')
 
 @usuarios_bp.route('/registro', methods=['POST'])
 def registrar():
-    datos = request.get_json() or {}
-    nombre = datos.get('nombre')
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "Se esperaba un objeto JSON"}), 400
     email = datos.get('email')
+    nombre = datos.get('nombre') or (email.split('@', 1)[0] if isinstance(email, str) else None)
     contrasena = datos.get('contrasena')
 
     if not all([nombre, email, contrasena]):

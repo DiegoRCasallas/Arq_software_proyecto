@@ -1,5 +1,16 @@
+from typing import Optional
+
+
 class Planta:
-    def __init__(self, id: int, usuario_id: int, especie: str, apodo: str, dispositivo_id: str, token_dispositivo_hash: str):
+    def __init__(
+        self,
+        id: Optional[int],
+        usuario_id: int,
+        especie: str,
+        apodo: Optional[str] = None,
+        dispositivo_id: Optional[str] = None,
+        token_dispositivo_hash: Optional[str] = None,
+    ):
         self.id = id
         self.usuario_id = usuario_id
         self.especie = especie

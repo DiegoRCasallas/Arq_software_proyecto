@@ -9,6 +9,7 @@ from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenci
 from infraestructura.persistencia.sql.repositorio_plantas_sql import RepositorioPlantasSQL
 from infraestructura.seguridad.hasher_werkzeug import HasherWerkzeug
 from aplicacion.casos_uso.consultar_historial import ConsultarHistorial
+from aplicacion.casos_uso.listar_especies import ListarEspeciesUseCase
 
 class Contenedor:
     def __init__(self):
@@ -63,6 +64,10 @@ class Contenedor:
             repo_mediciones=self.repo_mediciones,
             tabla_referencia=self.tabla_referencia,
             evaluador=self.evaluador
+        )
+
+        self.listar_especies_use_case = ListarEspeciesUseCase(
+            tabla_referencia=self.tabla_referencia
         )
 
 contenedor_app = Contenedor()
