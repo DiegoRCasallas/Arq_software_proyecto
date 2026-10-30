@@ -3,80 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detalles de la Planta - Plant Tech</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>PlantTech App</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f7f6; }
+        .pantalla { display: none; padding: 20px; padding-bottom: 70px; }
+        .pantalla.activa { display: block; }
+        .nav-inferior { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
+        .nav-inferior button { background: none; border: none; font-size: 16px; cursor: pointer; color: #2c3e50; }
+        .btn-primario { background: #27ae60; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 5px; font-size: 16px; margin-top: 10px; cursor: pointer;}
+        .btn-secundario { background: #2980b9; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 5px; font-size: 16px; margin-top: 10px; cursor: pointer;}
+        .tarjeta { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px; cursor: pointer;}
+        .menu-puntos { float: right; background: none; border: none; font-size: 20px; cursor: pointer; }
+    </style>
 </head>
 <body>
-    <!-- Encabezado -->
-    <header class="top-header">
-        <button id="btnBack" class="icon-button">←</button>
-        <h1>Detalles de la planta</h1>
-    </header>
 
-    <main class="app-container">
-        <!-- Tarjeta de perfil de la planta -->
-        <section class="plant-profile-card">
-            <div class="plant-image-placeholder">
-                <!-- Aquí irá la imagen de la planta -->
-                <span>[Foto]</span>
+    <!-- PANTALLA: Login -->
+    <div id="pantalla-login" class="pantalla activa">
+        <h2>Iniciar Sesión</h2>
+        <form id="form-login">
+            <input type="email" id="email" placeholder="Correo electrónico" required style="width:90%; padding:10px; margin-bottom:10px;">
+            <input type="password" id="password" placeholder="Contraseña" required style="width:90%; padding:10px; margin-bottom:10px;">
+            <button type="submit" class="btn-primario">Ingresar</button>
+        </form>
+    </div>
+
+    <!-- PANTALLA: Mis Plantas -->
+    <div id="pantalla-mis-plantas" class="pantalla">
+        <h2>Mis Plantas</h2>
+        <div id="lista-plantas">
+            <!-- Se llenará dinámicamente. Por ahora mostramos la planta simulada -->
+            <div class="tarjeta" id="btn-ver-detalles">
+                <h3>My Lovely Plant (Cinta)</h3>
+                <p>Última medición: Esperando datos...</p>
             </div>
-            <div class="plant-summary">
-                <h2 id="plantName">My Lovely Plant</h2>
-                <ul>
-                    <li><strong>Especie:</strong> <span id="plantSpecies">Cinta</span></li>
-                    <li><strong>Diagnósticos:</strong> <span id="plantDiagnosticsCount">4</span></li>
-                </ul>
-            </div>
-        </section>
-
-        <!-- Última Medición -->
-        <section class="latest-measurement">
-            <h3>Última medición</h3>
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <span class="icon">🌡️</span>
-                    <span>Temperatura</span>
-                    <strong id="valTemp">24°C</strong>
-                </div>
-                <div class="metric-card">
-                    <span class="icon">💧</span>
-                    <span>Humedad</span>
-                    <strong id="valHum">60%</strong>
-                </div>
-                <div class="metric-card">
-                    <span class="icon">☀️</span>
-                    <span>Luz</span>
-                    <strong id="valLight">Alta</strong>
-                </div>
-            </div>
-        </section>
-
-        <!-- Recomendaciones -->
-        <section class="recommendations">
-            <h3>Recomendaciones</h3>
-            <ul id="recommendationList">
-                <li>Regar cada 3-4 días</li>
-                <li>Proporcionar luz brillante e indirecta</li>
-                <li>Fertilizar mensualmente durante la temporada de crecimiento</li>
-            </ul>
-        </section>
-
-        <!-- Botones de Acción -->
-        <div class="action-buttons">
-            <button id="btnDiagnose" class="btn btn-primary">Diagnosticar</button>
-            <button id="btnConnect" class="btn btn-secondary">Conectar a Internet</button>
         </div>
-    </main>
+    </div>
 
-    <!-- Navegación Inferior -->
-    <nav class="bottom-nav">
-        <button class="nav-item active">Mis plantas</button>
-        <button class="nav-item">Añadir Sensor</button>
-        <button class="nav-item">Ajustes</button>
+    <!-- PANTALLA: Detalles de la Planta -->
+    <div id="pantalla-detalles" class="pantalla">
+        <button class="menu-puntos" id="btn-menu-puntos">⋮</button>
+        <h2>Detalles de la planta</h2>
+        
+        <!-- Menú desplegable oculto -->
+        <div id="menu-desplegable" style="display:none; background:white; position:absolute; right:20px; padding:10px; border:1px solid #ccc;">
+            <button id="btn-ver-historial" style="display:block; border:none; background:none; text-align:left; width:100%; padding:5px;">Historial de Diagnósticos</button>
+            <button style="display:block; border:none; background:none; text-align:left; width:100%; padding:5px; color:red;">Borrar planta</button>
+        </div>
+
+        <div class="tarjeta" id="estado-actual">
+            <p><strong>Estado:</strong> Cargando...</p>
+            <p><strong>Temperatura:</strong> -- °C</p>
+            <p><strong>Humedad:</strong> -- %</p>
+            <p><strong>Luz:</strong> -- lux</p>
+        </div>
+        <button class="btn-primario" onclick="alert('Medición solicitada al hardware (Fase futura)')">Diagnosticar</button>
+        <button class="btn-secundario" onclick="alert('Redirigiendo a Conectar a Internet (Fase futura)')">Conectar a Internet</button>
+    </div>
+
+    <!-- PANTALLA: Historial -->
+    <div id="pantalla-historial" class="pantalla">
+        <button onclick="mostrarPantalla('detalles')" style="margin-bottom:10px;">Volver</button>
+        <h2>Historial de Diagnósticos</h2>
+        <div id="contenedor-historial"></div>
+    </div>
+
+    <!-- PANTALLA: Añadir Planta (Placeholder visual) -->
+    <div id="pantalla-add-planta" class="pantalla">
+        <h2>Añadir Planta</h2>
+        <p>1. Encender la matera inteligente</p>
+        <p>2. Asegurarse que el wifi esté activado</p>
+        <p>3. Tocar el botón de buscar</p>
+        <button class="btn-secundario">Buscar dispositivos</button>
+    </div>
+
+    <!-- PANTALLA: Ajustes (Placeholder visual) -->
+    <div id="pantalla-ajustes" class="pantalla">
+        <h2>Ajustes</h2>
+        <button style="display:block; width:100%; padding:15px; margin-bottom:10px;">Cambiar contraseña</button>
+        <button id="btn-cerrar-sesion" style="display:block; width:100%; padding:15px; margin-bottom:10px; color:red;">Cerrar Sesión</button>
+        <button style="display:block; width:100%; padding:15px; margin-bottom:10px;">Política de Privacidad</button>
+    </div>
+
+    <!-- MENÚ INFERIOR (Solo visible cuando hay sesión) -->
+    <nav class="nav-inferior" id="menu-inferior" style="display:none;">
+        <button onclick="mostrarPantalla('mis-plantas')">🌿 Plantas</button>
+        <button onclick="mostrarPantalla('add-planta')">➕ Añadir plantas</button>
+        <button onclick="mostrarPantalla('ajustes')">⚙️ Ajustes</button>
     </nav>
 
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
-</body>
 </body>
 </html>

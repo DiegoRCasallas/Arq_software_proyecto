@@ -1,89 +1,88 @@
-/**
- * app.js: maneja los eventos de la interfaz y el renderizado del DOM.
- * No conoce fetch ni URLs -- eso vive en api.js. Aquí solo se traduce
- * la respuesta ya obtenida en HTML visible para el usuario.
- */
+// Enrutador simple para cambiar entre pantallas
+function mostrarPantalla(idActiva) {
+    document.querySelectorAll('.pantalla').forEach(p => p.classList.remove('activa'));
+    document.getElementById(`pantalla-${idActiva}`).classList.add('activa');
+    
+    // El menú inferior no se muestra en el login
+    document.getElementById('menu-inferior').style.display = (idActiva === 'login') ? 'none' : 'flex';
+}
 
-cdocument.addEventListener('DOMContentLoaded', () => {
-    // Referencias a los contenedores HTML (asegúrate de que estos IDs existan en tu index.html)
-    const formLogin = document.getElementById('form-login');
-    const seccionLogin = document.getElementById('seccion-login');
-    const seccionDashboard = document.getElementById('seccion-dashboard');
-    const contenedorHistorial = document.getElementById('contenedor-historial');
-    const btnCerrarSesion = document.getElementById('btn-cerrar-sesion');
-
-    // 1. Control de Sesión al cargar la página
+document.addEventListener('DOMContentLoaded', () => {
+    // Verificar sesión al inicio
     if (API.getToken()) {
-        mostrarDashboard();
-    } else {
-        mostrarLogin();
+        mostrarPantalla('mis-plantas');
     }
 
-    // 2. Evento de Login
-    if (formLogin) {
-        formLogin.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            try {
-                await API.login(email, password);
-                mostrarDashboard();
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-    }
+    // 1. Manejo del Login
+    document.getElementById('form-login').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        try {
+            await API.login(email, password);
+            mostrarPantalla('mis-plantas');
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    });
 
-    // 3. Evento de Cerrar Sesión
-    if (btnCerrarSesion) {
-        btnCerrarSesion.addEventListener('click', () => {
-            API.logout();
-            mostrarLogin();
-        });
-    }
+    // 2. Cerrar Sesión
+    document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
+        API.logout();
+        mostrarPantalla('login');
+    });
 
-    // 4. Funciones de actualización asíncrona de UI
-    async function mostrarDashboard() {
-        seccionLogin.style.display = 'none';
-        seccionDashboard.style.display = 'block';
+    // 3. Navegación a Detalles de Planta
+    document.getElementById('btn-ver-detalles').addEventListener('click', async () => {
+        mostrarPantalla('detalles');
         
         try {
-            // Para esta prueba usamos la planta ID 1 (la que inyectamos con seed.py)
+            // Consulta el historial de la planta ID 1 y toma el último registro
             const historial = await API.getHistorial(1);
-            renderizarHistorial(historial);
-        } catch (error) {
-            contenedorHistorial.innerHTML = `<p style="color:red;">Error: ${error.message}</p>`;
-            if (error.message.includes('NO_AUTORIZADO') || error.message.includes('TOKEN_EXPIRADO')) {
-                API.logout();
-                mostrarLogin();
+            const estadoActualDiv = document.getElementById('estado-actual');
+            
+            if (historial.length > 0) {
+                const ultima = historial[0]; // El backend ya los devuelve ordenados descendentes
+                estadoActualDiv.innerHTML = `
+                    <p><strong>Última actualización:</strong> ${new Date(ultima.fecha).toLocaleString()}</p>
+                    <p><strong>Temperatura:</strong> ${ultima.valores.temperatura} °C</p>
+                    <p><strong>Humedad:</strong> ${ultima.valores.humedad} %</p>
+                    <p><strong>Luz:</strong> ${ultima.valores.luz} lux</p>
+                `;
+            } else {
+                estadoActualDiv.innerHTML = `<p>Aún no hay datos de sensores.</p>`;
             }
+        } catch (error) {
+            console.error("Error al cargar detalles", error);
         }
-    }
+    });
 
-    function mostrarLogin() {
-        seccionLogin.style.display = 'block';
-        seccionDashboard.style.display = 'none';
-    }
+    // 4. Menú de 3 puntos y navegación a Historial
+    const menuDesplegable = document.getElementById('menu-desplegable');
+    document.getElementById('btn-menu-puntos').addEventListener('click', () => {
+        menuDesplegable.style.display = menuDesplegable.style.display === 'none' ? 'block' : 'none';
+    });
 
-    function renderizarHistorial(datos) {
-        if (!contenedorHistorial) return;
-        contenedorHistorial.innerHTML = '';
+    document.getElementById('btn-ver-historial').addEventListener('click', async () => {
+        menuDesplegable.style.display = 'none';
+        mostrarPantalla('historial');
         
-        if (datos.length === 0) {
-            contenedorHistorial.innerHTML = '<p>No hay mediciones aún.</p>';
-            return;
+        const contenedor = document.getElementById('contenedor-historial');
+        contenedor.innerHTML = 'Cargando historial...';
+        
+        try {
+            const historial = await API.getHistorial(1);
+            contenedor.innerHTML = '';
+            historial.forEach(m => {
+                contenedor.innerHTML += `
+                    <div class="tarjeta">
+                        <p><strong>${new Date(m.fecha).toLocaleString()}</strong></p>
+                        <p>Temp: ${m.valores.temperatura}°C | Hum: ${m.valores.humedad}% | Luz: ${m.valores.luz}lux</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            contenedor.innerHTML = `<p style="color:red;">Error al cargar: ${error.message}</p>`;
         }
-
-        datos.forEach(medicion => {
-            const div = document.createElement('div');
-            div.className = 'tarjeta-medicion'; // Usa la clase CSS de tu maquetación
-            div.innerHTML = `
-                <p><strong>Fecha:</strong> ${new Date(medicion.fecha).toLocaleString()}</p>
-                <p><strong>Temp:</strong> ${medicion.valores.temperatura}°C | <strong>Hum:</strong> ${medicion.valores.humedad}% | <strong>Luz:</strong> ${medicion.valores.luz}lx</p>
-                <hr>
-            `;
-            contenedorHistorial.appendChild(div);
-        });
-    }
+    });
 });
