@@ -8,3 +8,5 @@ venv/
 *.egg-info/
 .env
 .DS_Store
+*.db
+__pycache__/
