@@ -13,3 +13,6 @@ class RepositorioPlantas(Protocol):
         
     def guardar(self, planta: Planta) -> Planta:
         ...
+
+    def eliminar(self, planta_id: int) -> bool:
+        ...

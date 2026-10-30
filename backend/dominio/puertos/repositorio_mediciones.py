@@ -1,5 +1,5 @@
 from typing import Protocol, List
-from dominio.entidades.lectura_sensor import Medicion
+from dominio.entidades.medicion import Medicion
 
 class RepositorioMediciones(Protocol):
     def guardar(self, medicion: Medicion) -> None:

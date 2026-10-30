@@ -39,3 +39,8 @@ def test_tres_parametros_fuera_de_optimo_es_critico():
         "temperatura": EstadoParametro.BAJO,
     }
     assert estrategia.calcular(estados) == EstadoPlanta.CRITICO
+
+
+def test_sin_parametros_evaluables_es_indeterminado_y_no_saludable():
+    # Sin evidencia no se puede afirmar que la planta esté bien.
+    assert estrategia.calcular({}) == EstadoPlanta.INDETERMINADO

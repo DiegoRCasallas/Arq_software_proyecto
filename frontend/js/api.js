@@ -1,36 +1,87 @@
-const BASE_URL = 'http://localhost:5000/api/v1';
+const API = (() => {
+    const tokenKey = 'jwt_token';
+    const baseUrl = `${CONFIG.API_BASE_URL.replace(/\/$/, '')}/api/v1`;
 
-const API = {
-    setToken: (token) => localStorage.setItem('jwt_token', token),
-    getToken: () => localStorage.getItem('jwt_token'),
-    logout: () => localStorage.removeItem('jwt_token'),
-    
-    getHeaders: function() {
-        const headers = { 'Content-Type': 'application/json' };
-        const token = this.getToken();
-        if (token) headers['Authorization'] = `Bearer ${token}`; // Inyecta el JWT
-        return headers;
-    },
+    function getToken() {
+        return localStorage.getItem(tokenKey);
+    }
 
-    login: async function(email, contrasena) {
-        const res = await fetch(`${BASE_URL}/usuarios/login`, {
-            method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ email, contrasena })
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.mensaje || 'Error en login');
-        this.setToken(data.token);
-        return data;
-    },
+    async function request(path, options = {}) {
+        const headers = new Headers(options.headers || {});
+        headers.set('Accept', 'application/json');
+        if (options.body !== undefined) headers.set('Content-Type', 'application/json');
+        const token = getToken();
+        if (token) headers.set('Authorization', `Bearer ${token}`);
 
-    getHistorial: async function(plantaId) {
-        const res = await fetch(`${BASE_URL}/plantas/${plantaId}/historial`, {
-            method: 'GET',
-            headers: this.getHeaders()
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.mensaje || 'Error al obtener historial');
+        let response;
+        try {
+            response = await fetch(`${baseUrl}${path}`, { ...options, headers });
+        } catch {
+            throw new Error('No fue posible conectar con PlantTech. Revisa tu conexión e inténtalo de nuevo.');
+        }
+
+        const body = await response.text();
+        let data = {};
+        if (body) {
+            try {
+                data = JSON.parse(body);
+            } catch {
+                throw new Error('El servidor devolvió una respuesta que no se pudo interpretar.');
+            }
+        }
+
+        if (response.status === 401 && token) {
+            localStorage.removeItem(tokenKey);
+            localStorage.removeItem('usuario_email');
+            window.dispatchEvent(new Event('sessionexpired'));
+        }
+        if (!response.ok) {
+            throw new Error(data.mensaje || data.error || 'Ocurrió un error. Inténtalo de nuevo.');
+        }
         return data;
     }
-};
+
+    return {
+        getToken,
+        logout() {
+            localStorage.removeItem(tokenKey);
+            localStorage.removeItem('usuario_email');
+        },
+        async login(email, contrasena) {
+            const data = await request('/usuarios/login', {
+                method: 'POST',
+                body: JSON.stringify({ email, contrasena }),
+            });
+            localStorage.setItem(tokenKey, data.token);
+            localStorage.setItem('usuario_email', email);
+            return data;
+        },
+        register(nombre, email, contrasena) {
+            return request('/usuarios/registro', {
+                method: 'POST',
+                body: JSON.stringify({ nombre, email, contrasena }),
+            });
+        },
+        getPlants() {
+            return request('/plantas');
+        },
+        getPlant(plantaId) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}`);
+        },
+        createPlant(planta) {
+            return request('/plantas', {
+                method: 'POST',
+                body: JSON.stringify(planta),
+            });
+        },
+        deletePlant(plantaId) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}`, { method: 'DELETE' });
+        },
+        getSpecies() {
+            return request('/especies');
+        },
+        getHistory(plantaId) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/historial?limite=50`);
+        },
+    };
+})();

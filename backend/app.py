@@ -6,6 +6,7 @@ from infraestructura.persistencia.sql.modelos import db
 from infraestructura.config.contenedor import contenedor_app
 from presentacion.controladores.usuarios_controller import usuarios_bp
 from presentacion.controladores.plantas_controller import plantas_bp
+from presentacion.controladores.especies_controller import crear_especies_blueprint
 
 def crear_app():
     app = Flask(__name__)
@@ -22,10 +23,20 @@ def crear_app():
     # Solo crea el esquema si no existe, basándose en los modelos aislados
     with app.app_context():
         db.create_all()
+        # Asegurar que las especies y rangos de referencia existan al iniciar
+        try:
+            from seed import poblar_datos
+            poblar_datos(db)
+        except Exception as e:
+            app.logger.warning(f"No se pudo sincronizar seed en inicio: {e}")
 
     app.register_blueprint(dispositivos_bp)
     app.register_blueprint(usuarios_bp)
     app.register_blueprint(plantas_bp)
+    app.register_blueprint(
+        crear_especies_blueprint(contenedor_app.listar_especies_use_case),
+        url_prefix="/api/v1",
+    )
 
     @app.get("/health")
     def health():
@@ -34,10 +45,19 @@ def crear_app():
     @app.route("/api/v1/seed", methods=["GET", "POST"])
     def seed_db():
         from seed import poblar_datos
+        from infraestructura.persistencia.sql.modelos import EspecieModelo, RangoEspecieModelo
         creado = poblar_datos(db)
+        conteo_esp = db.session.query(EspecieModelo).count()
+        conteo_rangos = db.session.query(RangoEspecieModelo).count()
         if creado:
-            return jsonify({"status": "ok", "mensaje": "Base de datos poblada con éxito."}), 200
-        return jsonify({"status": "ok", "mensaje": "La base de datos ya contenía los datos iniciales."}), 200
+            return jsonify({
+                "status": "ok",
+                "mensaje": f"Base de datos poblada con éxito. Especies: {conteo_esp}, Rangos: {conteo_rangos}."
+            }), 200
+        return jsonify({
+            "status": "ok",
+            "mensaje": f"La base de datos ya contenía los datos sincronizados ({conteo_esp} especies, {conteo_rangos} rangos)."
+        }), 200
 
     @app.errorhandler(404)
     def no_encontrado(e):

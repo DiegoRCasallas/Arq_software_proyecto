@@ -37,8 +37,7 @@ def serializar_perfil_especie(perfil: PerfilEspecie) -> dict:
     return {
         "especie": perfil.nombre_especie,
         "rangos": {
-            "humedad": _serializar_rango(perfil.rango_humedad),
-            "luz": _serializar_rango(perfil.rango_luz),
-            "temperatura": _serializar_rango(perfil.rango_temperatura),
+            parametro: _serializar_rango(rango)
+            for parametro, rango in perfil.rangos.items()
         },
     }

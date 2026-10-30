@@ -3,6 +3,7 @@ EstrategiaAgregacionPorConteo: implementación por defecto de la regla de
 agregación del índice de vitalidad (RF3).
 
 Regla elegida (documentada aquí y en docs/arquitectura.md):
+    - sin parámetros evaluables      -> INDETERMINADO (no hay evidencia)
     - 0 parámetros fuera del óptimo  -> SALUDABLE
     - 1 parámetro fuera del óptimo   -> EN_RIESGO
     - 2 o más parámetros fuera del óptimo -> CRITICO
@@ -21,6 +22,9 @@ from dominio.valores.estado_planta import EstadoPlanta
 
 class EstrategiaAgregacionPorConteo:
     def calcular(self, estados: dict[str, EstadoParametro]) -> EstadoPlanta:
+        if not estados:
+            return EstadoPlanta.INDETERMINADO
+
         fuera_de_optimo = sum(
             1 for estado in estados.values() if estado != EstadoParametro.OPTIMO
         )
