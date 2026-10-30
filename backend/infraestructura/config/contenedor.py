@@ -61,7 +61,7 @@ class Contenedor:
         self.consultar_historial_use_case = ConsultarHistorial(
             repo_plantas=self.repo_plantas,
             repo_mediciones=self.repo_mediciones,
-            tabla_referencia=self.tabla_referencias,
+            tabla_referencia=self.tabla_referencia,
             evaluador=self.evaluador
         )
 
