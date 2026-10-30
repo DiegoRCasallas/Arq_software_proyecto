@@ -8,22 +8,27 @@ plantas_bp = Blueprint('plantas', __name__, url_prefix='/api/v1/plantas')
 @plantas_bp.route('/<int:planta_id>/historial', methods=['GET'])
 @requiere_jwt
 def historial(planta_id):
-    # Permite al frontend enviar un límite personalizado por URL, ej: ?limite=20
     limite = request.args.get('limite', default=10, type=int)
     usuario_id = g.usuario_id
 
     try:
-        mediciones = contenedor_app.consultar_historial_use_case.ejecutar(usuario_id, planta_id, limite)
+        # El caso de uso devuelve una lista de diccionarios con la entidad Medicion y la entidad DiagnosticoPlanta
+        resultados = contenedor_app.consultar_historial_use_case.ejecutar(usuario_id, planta_id, limite)
         
-        # Transformamos las entidades puras a JSON para el frontend
-        resultado = []
-        for m in mediciones:
-            resultado.append({
+        respuesta = []
+        for item in resultados:
+            m = item["medicion"]
+            d = item["diagnostico"]
+            
+            respuesta.append({
                 "fecha": m.fecha.isoformat(),
-                "valores": m.valores
+                "valores": m.valores,
+                "detalle_parametros": {param: estado.name for param, estado in d.estados.items()},
+                "estado_general": d.estado_planta.name,
+                "recomendaciones": d.recomendaciones
             })
             
-        return jsonify(resultado), 200
+        return jsonify(respuesta), 200
 
     except ErrorDominio as e:
         return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400

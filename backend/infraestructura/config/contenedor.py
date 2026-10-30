@@ -59,9 +59,11 @@ class Contenedor:
         )
 
         self.consultar_historial_use_case = ConsultarHistorial(
-        repo_plantas=self.repo_plantas,
-        repo_mediciones=self.repo_mediciones
-    )
+            repo_plantas=self.repo_plantas,
+            repo_mediciones=self.repo_mediciones,
+            tabla_referencia=self.tabla_referencias,
+            evaluador=self.evaluador
+        )
 
 contenedor_app = Contenedor()
 registrar_medicion_use_case = contenedor_app.registrar_medicion_use_case

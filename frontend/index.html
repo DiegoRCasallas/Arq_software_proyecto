@@ -8,28 +8,36 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
         .pantalla { display: none; padding: 20px; padding-bottom: 80px; }
         .pantalla.activa { display: block; }
-        .nav-inferior { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-inferior { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 100;}
         .nav-inferior button { background: none; border: none; font-size: 14px; cursor: pointer; color: #555; display: flex; flex-direction: column; align-items: center; }
         
-        /* Botones más grandes basados en el mockup */
         .btn-primario { background: #3734eb; color: white; border: none; padding: 16px 20px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .btn-secundario { background: #00a811; color: white; border: none; padding: 16px 20px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
-        /* Tarjetas estilo Mockup */
         .tarjeta { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; cursor: pointer; }
-        .header-verde { background-color: #008f39; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold; }
-        .menu-puntos { background: none; border: none; font-size: 24px; cursor: pointer; color: white; padding: 0; margin-top: -5px; }
         
-        /* Grid para mediciones */
+        /* Header y Menú Desplegable Mejorado */
+        .header-verde { background-color: #008f39; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold; }
+        .menu-opciones { position: relative; display: inline-block; }
+        .btn-opciones { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 8px 12px; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 45px; background-color: white; min-width: 220px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; z-index: 200; border: 1px solid #eee; }
+        .dropdown-content button { color: #333; padding: 14px 16px; border: none; background: none; width: 100%; text-align: left; font-size: 15px; cursor: pointer; border-bottom: 1px solid #eee; }
+        .dropdown-content button:hover { background-color: #f9f9f9; }
+        .dropdown-content button.danger { color: #e74c3c; border-bottom: none; font-weight: bold; }
+
         .grid-mediciones { display: flex; flex-wrap: wrap; justify-content: space-between; }
-        .tarjeta-medicion { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; width: 45%; box-sizing: border-box; text-align: left; }
+        .tarjeta-medicion { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; width: 45%; box-sizing: border-box; text-align: left; position: relative;}
         .tarjeta-medicion p { margin: 0; color: #555; font-size: 14px; font-weight: 500; }
         .tarjeta-medicion h3 { margin: 8px 0 0 0; font-size: 20px; color: #222; }
+        .badge { position: absolute; top: 10px; right: 10px; font-size: 11px; padding: 3px 6px; border-radius: 4px; font-weight: bold; color: white;}
+        .badge.optimo { background-color: #2ecc71; }
+        .badge.alerta { background-color: #e74c3c; }
+        .badge.bajo { background-color: #f39c12; }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA: Login -->
+    <!-- Login -->
     <div id="pantalla-login" class="pantalla activa">
         <h2>Iniciar Sesión</h2>
         <form id="form-login">
@@ -39,11 +47,11 @@
         </form>
     </div>
 
-    <!-- PANTALLA: Mis Plantas -->
+    <!-- Mis Plantas -->
     <div id="pantalla-mis-plantas" class="pantalla">
         <h2>Mis Plantas</h2>
         <div id="lista-plantas">
-            <div class="tarjeta" id="btn-ver-detalles" style="display: flex; align-items: center;">
+            <div class="tarjeta" id="btn-ir-detalles" style="display: flex; align-items: center;">
                 <div style="width: 50px; height: 50px; border: 1px solid #ccc; margin-right: 15px; display: flex; justify-content: center; align-items: center;">X</div>
                 <div>
                     <h3 style="margin: 0;">My Lovely Plant</h3>
@@ -53,10 +61,17 @@
         </div>
     </div>
 
-    <!-- PANTALLA: Detalles de la Planta -->
+    <!-- Detalles de la Planta -->
     <div id="pantalla-detalles" class="pantalla">
         <div class="header-verde">
-            <span style="cursor: pointer;" onclick="mostrarPantalla('mis-plantas')">← Detalles de la planta</span>
+            <span style="cursor: pointer;" onclick="mostrarPantalla('mis-plantas')">← Detalles</span>
+            <div class="menu-opciones">
+                <button class="btn-opciones" id="btn-opciones">⚙️ Opciones ▾</button>
+                <div id="menu-desplegable" class="dropdown-content">
+                    <button id="btn-ver-historial">⏱️ Historial de Diagnósticos</button>
+                    <button class="danger" onclick="alert('Funcionalidad de borrar planta (Fase futura)')">🗑️ Borrar planta</button>
+                </div>
+            </div>
         </div>
 
         <div class="tarjeta" style="display: flex; align-items: center; margin-bottom: 25px;">
@@ -67,7 +82,11 @@
             </div>
         </div>
 
-        <h3 style="margin-bottom: 15px;">Última medición</h3>
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px;">
+            <h3 style="margin: 0;">Última medición</h3>
+            <span id="fecha-medicion" style="font-size: 13px; color: #666;">--</span>
+        </div>
+        
         <div id="estado-actual" class="grid-mediciones">
             <!-- Renderizado dinámico -->
         </div>
@@ -79,38 +98,20 @@
 
         <button class="btn-primario" onclick="alert('Medición solicitada al hardware')">Diagnosticar</button>
         <button class="btn-secundario" onclick="alert('Redirigiendo a Conectar a Internet')">Conectar a internet</button>
-        
-        <!-- Nuevos botones visibles -->
-        <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button id="btn-ver-historial" class="btn-secundario" style="background-color: #f39c12; margin-top: 0; padding: 12px;">Historial</button>
-            <button class="btn-secundario" style="background-color: #e74c3c; margin-top: 0; padding: 12px;" onclick="alert('Funcionalidad de borrar planta (Fase futura)')">Borrar planta</button>
-        </div>
     </div>
-    
-    <!-- PANTALLA: Historial -->
+
+    <!-- Historial -->
     <div id="pantalla-historial" class="pantalla">
-        <button onclick="mostrarPantalla('detalles')" style="margin-bottom:15px; background:none; border:none; color:#008f39; font-size:16px; cursor:pointer;">← Volver</button>
+        <button onclick="mostrarPantalla('detalles')" style="margin-bottom:15px; background:none; border:none; color:#008f39; font-size:16px; font-weight:bold; cursor:pointer;">← Volver a Detalles</button>
         <h2>Historial de Diagnósticos</h2>
         <div id="contenedor-historial"></div>
     </div>
 
-    <!-- PANTALLA: Añadir Planta -->
-    <div id="pantalla-add-planta" class="pantalla">
-        <h2>Añadir Planta</h2>
-        <div class="tarjeta">
-            <p>1. Encender la matera inteligente</p>
-            <p>2. Asegurarse que el wifi esté activado en el dispositivo</p>
-            <p>3. Tocar el botón de buscar abajo</p>
-        </div>
-        <button class="btn-secundario">Buscar dispositivos</button>
-    </div>
-
-    <!-- PANTALLA: Ajustes -->
+    <!-- Añadir y Ajustes (Ocultas por defecto) -->
+    <div id="pantalla-add-planta" class="pantalla"><h2>Añadir Planta</h2><p>En desarrollo...</p></div>
     <div id="pantalla-ajustes" class="pantalla">
         <h2>Ajustes</h2>
-        <button class="tarjeta" style="width:100%; text-align:left; border:none; font-size:16px;">Cambiar contraseña</button>
         <button class="tarjeta" id="btn-cerrar-sesion" style="width:100%; text-align:left; border:none; font-size:16px; color:red;">Cerrar Sesión</button>
-        <button class="tarjeta" style="width:100%; text-align:left; border:none; font-size:16px;">Política de Privacidad</button>
     </div>
 
     <!-- MENÚ INFERIOR -->
