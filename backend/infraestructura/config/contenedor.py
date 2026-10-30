@@ -37,5 +37,25 @@ class Contenedor:
             repo_mediciones=self.repo_mediciones
         )
 
+        # 4. Configurar Adaptadores de Seguridad y Usuarios
+        from infraestructura.persistencia.sql.repositorio_usuarios_sql import RepositorioUsuariosSQL
+        from infraestructura.seguridad.tokens_jwt import TokensJWT
+        from aplicacion.casos_uso.registrar_usuario import RegistrarUsuario
+        from aplicacion.casos_uso.iniciar_sesion import IniciarSesion
+
+        self.repo_usuarios = RepositorioUsuariosSQL()
+        self.servicio_tokens = TokensJWT()
+
+        self.registrar_usuario_use_case = RegistrarUsuario(
+            repo_usuarios=self.repo_usuarios,
+            hasher_contrasenas=self.hasher
+        )
+
+        self.iniciar_sesion_use_case = IniciarSesion(
+            repo_usuarios=self.repo_usuarios,
+            hasher_contrasenas=self.hasher,
+            servicio_tokens=self.servicio_tokens
+        )
+
 contenedor_app = Contenedor()
 registrar_medicion_use_case = contenedor_app.registrar_medicion_use_case
