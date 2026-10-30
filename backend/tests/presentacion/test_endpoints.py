@@ -30,9 +30,13 @@ def test_listar_especies(client):
 
     assert respuesta.status_code == 200
     especies = respuesta.get_json()
-    assert [e["especie"] for e in especies] == ["Cinta"]
-    assert set(especies[0]["rangos"]) == {"temperatura", "humedad", "luz"}
-    assert set(especies[0]["rangos"]["luz"]) == {"minimo", "optimo_min", "optimo_max", "maximo"}
+    nombres = [e["especie"] for e in especies]
+    assert len(nombres) >= 5
+    assert "Cinta" in nombres
+
+    cinta = next(e for e in especies if e["especie"] == "Cinta")
+    assert set(cinta["rangos"]) == {"temperatura", "humedad", "luz"}
+    assert set(cinta["rangos"]["luz"]) == {"minimo", "optimo_min", "optimo_max", "maximo"}
 
 
 def test_ruta_inexistente_devuelve_json_404(client):
