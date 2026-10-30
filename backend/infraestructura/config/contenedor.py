@@ -8,6 +8,7 @@ from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenci
 from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenciaCSV
 from infraestructura.persistencia.sql.repositorio_plantas_sql import RepositorioPlantasSQL
 from infraestructura.seguridad.hasher_werkzeug import HasherWerkzeug
+from aplicacion.casos_uso.consultar_historial import ConsultarHistorial
 
 class Contenedor:
     def __init__(self):
@@ -56,6 +57,11 @@ class Contenedor:
             hasher_contrasenas=self.hasher,
             servicio_tokens=self.servicio_tokens
         )
+
+        self.consultar_historial_use_case = ConsultarHistorial(
+        repo_plantas=self.repo_plantas,
+        repo_mediciones=self.repo_mediciones
+    )
 
 contenedor_app = Contenedor()
 registrar_medicion_use_case = contenedor_app.registrar_medicion_use_case
