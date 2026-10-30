@@ -5,15 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PlantTech App</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f7f6; }
-        .pantalla { display: none; padding: 20px; padding-bottom: 70px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; color: #333; }
+        .pantalla { display: none; padding: 20px; padding-bottom: 80px; }
         .pantalla.activa { display: block; }
-        .nav-inferior { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 10px 0; box-shadow: 0 -2px 5px rgba(0,0,0,0.1); }
-        .nav-inferior button { background: none; border: none; font-size: 16px; cursor: pointer; color: #2c3e50; }
-        .btn-primario { background: #27ae60; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 5px; font-size: 16px; margin-top: 10px; cursor: pointer;}
-        .btn-secundario { background: #2980b9; color: white; border: none; padding: 10px 20px; width: 100%; border-radius: 5px; font-size: 16px; margin-top: 10px; cursor: pointer;}
-        .tarjeta { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 10px; cursor: pointer;}
-        .menu-puntos { float: right; background: none; border: none; font-size: 20px; cursor: pointer; }
+        .nav-inferior { position: fixed; bottom: 0; width: 100%; background: #fff; display: flex; justify-content: space-around; padding: 12px 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+        .nav-inferior button { background: none; border: none; font-size: 14px; cursor: pointer; color: #555; display: flex; flex-direction: column; align-items: center; }
+        
+        /* Botones más grandes basados en el mockup */
+        .btn-primario { background: #3734eb; color: white; border: none; padding: 16px 20px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .btn-secundario { background: #00a811; color: white; border: none; padding: 16px 20px; width: 100%; border-radius: 8px; font-size: 18px; font-weight: bold; margin-top: 15px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        
+        /* Tarjetas estilo Mockup */
+        .tarjeta { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; cursor: pointer; }
+        .header-verde { background-color: #008f39; color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: bold; }
+        .menu-puntos { background: none; border: none; font-size: 24px; cursor: pointer; color: white; padding: 0; margin-top: -5px; }
+        
+        /* Grid para mediciones */
+        .grid-mediciones { display: flex; flex-wrap: wrap; justify-content: space-between; }
+        .tarjeta-medicion { background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 15px; width: 45%; box-sizing: border-box; text-align: left; }
+        .tarjeta-medicion p { margin: 0; color: #555; font-size: 14px; font-weight: 500; }
+        .tarjeta-medicion h3 { margin: 8px 0 0 0; font-size: 20px; color: #222; }
     </style>
 </head>
 <body>
@@ -22,8 +33,8 @@
     <div id="pantalla-login" class="pantalla activa">
         <h2>Iniciar Sesión</h2>
         <form id="form-login">
-            <input type="email" id="email" placeholder="Correo electrónico" required style="width:90%; padding:10px; margin-bottom:10px;">
-            <input type="password" id="password" placeholder="Contraseña" required style="width:90%; padding:10px; margin-bottom:10px;">
+            <input type="email" id="email" placeholder="Correo electrónico" required style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
+            <input type="password" id="password" placeholder="Contraseña" required style="width:100%; padding:15px; margin-bottom:15px; border:1px solid #ccc; border-radius:8px; box-sizing:border-box;">
             <button type="submit" class="btn-primario">Ingresar</button>
         </form>
     </div>
@@ -32,64 +43,81 @@
     <div id="pantalla-mis-plantas" class="pantalla">
         <h2>Mis Plantas</h2>
         <div id="lista-plantas">
-            <!-- Se llenará dinámicamente. Por ahora mostramos la planta simulada -->
-            <div class="tarjeta" id="btn-ver-detalles">
-                <h3>My Lovely Plant (Cinta)</h3>
-                <p>Última medición: Esperando datos...</p>
+            <div class="tarjeta" id="btn-ver-detalles" style="display: flex; align-items: center;">
+                <div style="width: 50px; height: 50px; border: 1px solid #ccc; margin-right: 15px; display: flex; justify-content: center; align-items: center;">X</div>
+                <div>
+                    <h3 style="margin: 0;">My Lovely Plant</h3>
+                    <p style="margin: 5px 0 0 0; color: #666;">Cinta</p>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- PANTALLA: Detalles de la Planta -->
     <div id="pantalla-detalles" class="pantalla">
-        <button class="menu-puntos" id="btn-menu-puntos">⋮</button>
-        <h2>Detalles de la planta</h2>
+        <div class="header-verde">
+            <span style="cursor: pointer;" onclick="mostrarPantalla('mis-plantas')">← Detalles de la planta</span>
+            <button class="menu-puntos" id="btn-menu-puntos">⋮</button>
+        </div>
         
-        <!-- Menú desplegable oculto -->
-        <div id="menu-desplegable" style="display:none; background:white; position:absolute; right:20px; padding:10px; border:1px solid #ccc;">
-            <button id="btn-ver-historial" style="display:block; border:none; background:none; text-align:left; width:100%; padding:5px;">Historial de Diagnósticos</button>
-            <button style="display:block; border:none; background:none; text-align:left; width:100%; padding:5px; color:red;">Borrar planta</button>
+        <div id="menu-desplegable" style="display:none; background:white; position:absolute; right:20px; top:65px; padding:10px; border-radius:8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); z-index: 10;">
+            <button id="btn-ver-historial" style="display:block; border:none; background:none; text-align:left; width:100%; padding:10px; font-size: 16px;">Historial de Diagnósticos</button>
+            <button style="display:block; border:none; background:none; text-align:left; width:100%; padding:10px; color:red; font-size: 16px;">Borrar planta</button>
         </div>
 
-        <div class="tarjeta" id="estado-actual">
-            <p><strong>Estado:</strong> Cargando...</p>
-            <p><strong>Temperatura:</strong> -- °C</p>
-            <p><strong>Humedad:</strong> -- %</p>
-            <p><strong>Luz:</strong> -- lux</p>
+        <div class="tarjeta" style="display: flex; align-items: center; margin-bottom: 25px;">
+            <div style="width: 80px; height: 80px; border: 1px solid #ccc; margin-right: 15px; display: flex; justify-content: center; align-items: center; font-size:24px; color:#aaa;">X</div>
+            <div>
+                <h3 style="margin: 0; font-size:22px;">My Lovely Plant</h3>
+                <p style="margin: 5px 0 0 0; color: #666; font-size:16px;">Cinta</p>
+            </div>
         </div>
-        <button class="btn-primario" onclick="alert('Medición solicitada al hardware (Fase futura)')">Diagnosticar</button>
-        <button class="btn-secundario" onclick="alert('Redirigiendo a Conectar a Internet (Fase futura)')">Conectar a Internet</button>
+
+        <h3 style="margin-bottom: 15px;">Última medición</h3>
+        <div id="estado-actual" class="grid-mediciones">
+            <!-- Renderizado dinámico desde app.js -->
+        </div>
+
+        <h3 style="margin-bottom: 15px;">Recomendaciones</h3>
+        <div id="recomendaciones-actuales" class="tarjeta" style="line-height: 1.6; color: #333;">
+            <!-- Renderizado dinámico desde app.js -->
+        </div>
+
+        <button class="btn-primario" onclick="alert('Medición solicitada al hardware')">Diagnosticar</button>
+        <button class="btn-secundario" onclick="alert('Redirigiendo a Conectar a Internet')">Conectar a internet</button>
     </div>
 
     <!-- PANTALLA: Historial -->
     <div id="pantalla-historial" class="pantalla">
-        <button onclick="mostrarPantalla('detalles')" style="margin-bottom:10px;">Volver</button>
+        <button onclick="mostrarPantalla('detalles')" style="margin-bottom:15px; background:none; border:none; color:#008f39; font-size:16px; cursor:pointer;">← Volver</button>
         <h2>Historial de Diagnósticos</h2>
         <div id="contenedor-historial"></div>
     </div>
 
-    <!-- PANTALLA: Añadir Planta (Placeholder visual) -->
+    <!-- PANTALLA: Añadir Planta -->
     <div id="pantalla-add-planta" class="pantalla">
         <h2>Añadir Planta</h2>
-        <p>1. Encender la matera inteligente</p>
-        <p>2. Asegurarse que el wifi esté activado</p>
-        <p>3. Tocar el botón de buscar</p>
+        <div class="tarjeta">
+            <p>1. Encender la matera inteligente</p>
+            <p>2. Asegurarse que el wifi esté activado en el dispositivo</p>
+            <p>3. Tocar el botón de buscar abajo</p>
+        </div>
         <button class="btn-secundario">Buscar dispositivos</button>
     </div>
 
-    <!-- PANTALLA: Ajustes (Placeholder visual) -->
+    <!-- PANTALLA: Ajustes -->
     <div id="pantalla-ajustes" class="pantalla">
         <h2>Ajustes</h2>
-        <button style="display:block; width:100%; padding:15px; margin-bottom:10px;">Cambiar contraseña</button>
-        <button id="btn-cerrar-sesion" style="display:block; width:100%; padding:15px; margin-bottom:10px; color:red;">Cerrar Sesión</button>
-        <button style="display:block; width:100%; padding:15px; margin-bottom:10px;">Política de Privacidad</button>
+        <button class="tarjeta" style="width:100%; text-align:left; border:none; font-size:16px;">Cambiar contraseña</button>
+        <button class="tarjeta" id="btn-cerrar-sesion" style="width:100%; text-align:left; border:none; font-size:16px; color:red;">Cerrar Sesión</button>
+        <button class="tarjeta" style="width:100%; text-align:left; border:none; font-size:16px;">Política de Privacidad</button>
     </div>
 
-    <!-- MENÚ INFERIOR (Solo visible cuando hay sesión) -->
+    <!-- MENÚ INFERIOR -->
     <nav class="nav-inferior" id="menu-inferior" style="display:none;">
-        <button onclick="mostrarPantalla('mis-plantas')">🌿 Plantas</button>
-        <button onclick="mostrarPantalla('add-planta')">➕ Añadir plantas</button>
-        <button onclick="mostrarPantalla('ajustes')">⚙️ Ajustes</button>
+        <button onclick="mostrarPantalla('mis-plantas')"><span style="font-size:20px;">🌿</span> Plantas</button>
+        <button onclick="mostrarPantalla('add-planta')"><span style="font-size:20px;">➕</span> Añadir planta</button>
+        <button onclick="mostrarPantalla('ajustes')"><span style="font-size:20px;">⚙️</span> Ajustes</button>
     </nav>
 
     <script src="js/api.js"></script>

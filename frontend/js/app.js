@@ -37,20 +37,50 @@ document.addEventListener('DOMContentLoaded', () => {
         mostrarPantalla('detalles');
         
         try {
-            // Consulta el historial de la planta ID 1 y toma el último registro
             const historial = await API.getHistorial(1);
             const estadoActualDiv = document.getElementById('estado-actual');
+            const recomendacionesDiv = document.getElementById('recomendaciones-actuales');
             
             if (historial.length > 0) {
-                const ultima = historial[0]; // El backend ya los devuelve ordenados descendentes
+                const ultima = historial[0];
+                
+                // 1. Renderizar tarjetas de medición
                 estadoActualDiv.innerHTML = `
-                    <p><strong>Última actualización:</strong> ${new Date(ultima.fecha).toLocaleString()}</p>
-                    <p><strong>Temperatura:</strong> ${ultima.valores.temperatura} °C</p>
-                    <p><strong>Humedad:</strong> ${ultima.valores.humedad} %</p>
-                    <p><strong>Luz:</strong> ${ultima.valores.luz} lux</p>
+                    <div class="tarjeta-medicion">
+                        <p>🌡️ Temperatura</p>
+                        <h3>${ultima.valores.temperatura}°C</h3>
+                    </div>
+                    <div class="tarjeta-medicion">
+                        <p>💧 Humedad</p>
+                        <h3>${ultima.valores.humedad}%</h3>
+                    </div>
+                    <div class="tarjeta-medicion" style="width: 100%;">
+                        <p>☀️ Luz</p>
+                        <h3>${ultima.valores.luz} lux</h3>
+                    </div>
                 `;
+
+                // 2. Generar recomendaciones dinámicas basadas en los valores
+                let recsHTML = "";
+                if (ultima.valores.humedad < 40) {
+                    recsHTML += "<p>🌊 <strong>Aumentar riego:</strong> El sustrato está muy seco.</p>";
+                } else {
+                    recsHTML += "<p>🌊 <strong>Regar cada 3-4 días:</strong> Mantén la humedad actual.</p>";
+                }
+                
+                if (ultima.valores.luz < 500) {
+                    recsHTML += "<p>💡 <strong>Mover planta:</strong> Necesita más iluminación.</p>";
+                } else {
+                    recsHTML += "<p>💡 <strong>Luz adecuada:</strong> Proporciona luz brillante e indirecta.</p>";
+                }
+
+                recsHTML += "<p>🧪 <strong>Fertiliza:</strong> Mensualmente durante la temporada de crecimiento.</p>";
+                
+                recomendacionesDiv.innerHTML = recsHTML;
+
             } else {
-                estadoActualDiv.innerHTML = `<p>Aún no hay datos de sensores.</p>`;
+                estadoActualDiv.innerHTML = `<p style="padding:15px;">Aún no hay datos de sensores.</p>`;
+                recomendacionesDiv.innerHTML = `<p>Esperando la primera medición...</p>`;
             }
         } catch (error) {
             console.error("Error al cargar detalles", error);
