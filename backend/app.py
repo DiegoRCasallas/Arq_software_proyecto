@@ -27,11 +27,20 @@ def crear_app():
     def health():
         return jsonify({"status": "ok"}), 200
 
+    @app.route("/api/v1/seed", methods=["GET", "POST"])
+    def seed_db():
+        from seed import poblar_datos
+        creado = poblar_datos(db)
+        if creado:
+            return jsonify({"status": "ok", "mensaje": "Base de datos poblada con éxito."}), 200
+        return jsonify({"status": "ok", "mensaje": "La base de datos ya contenía los datos iniciales."}), 200
+
     @app.errorhandler(404)
     def no_encontrado(e):
         return jsonify({"error": "RUTA_NO_ENCONTRADA", "mensaje": "El endpoint solicitado no existe"}), 404
 
     return app
+
 
 create_app = crear_app
 
