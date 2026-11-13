@@ -70,5 +70,17 @@ class Contenedor:
             tabla_referencia=self.tabla_referencia
         )
 
+        # 5. Casos de uso de vinculación de dispositivos (QR)
+        from aplicacion.casos_uso.vincular_dispositivo import VincularDispositivo
+        from aplicacion.casos_uso.desvincular_dispositivo import DesvincularDispositivo
+
+        self.vincular_dispositivo_use_case = VincularDispositivo(
+            repo_plantas=self.repo_plantas,
+            hasher=self.hasher,
+        )
+        self.desvincular_dispositivo_use_case = DesvincularDispositivo(
+            repo_plantas=self.repo_plantas,
+        )
+
 contenedor_app = Contenedor()
 registrar_medicion_use_case = contenedor_app.registrar_medicion_use_case

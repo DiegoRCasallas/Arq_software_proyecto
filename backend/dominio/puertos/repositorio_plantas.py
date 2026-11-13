@@ -16,3 +16,11 @@ class RepositorioPlantas(Protocol):
 
     def eliminar(self, planta_id: int) -> bool:
         ...
+
+    def actualizar_dispositivo(
+        self,
+        planta_id: int,
+        dispositivo_id: Optional[str],
+        token_hash: Optional[str],
+    ) -> None:
+        ...

@@ -44,6 +44,15 @@ class RepositorioPlantasSQL:
         planta.id = planta_db.id
         return planta
 
+    def actualizar_dispositivo(self, planta_id: int, dispositivo_id, token_hash) -> None:
+        """Vincula o desvincula (None) un ESP32 de la planta."""
+        planta_db = db.session.get(PlantaModelo, planta_id)
+        if planta_db is None:
+            return
+        planta_db.dispositivo_id = dispositivo_id
+        planta_db.token_dispositivo_hash = token_hash
+        db.session.commit()
+
     def eliminar(self, planta_id: int) -> bool:
         planta_db = db.session.get(PlantaModelo, planta_id)
         if planta_db is None:

@@ -105,6 +105,56 @@ def eliminar_planta(planta_id):
     return jsonify({"mensaje": "Planta eliminada"}), 200
 
 
+@plantas_bp.route('/<int:planta_id>/dispositivo', methods=['POST'])
+@requiere_jwt
+def vincular_dispositivo(planta_id):
+    """
+    Recibe los datos escaneados del QR del ESP32 y los vincula a la planta.
+
+    Body esperado (JSON extraído del QR):
+      { "dispositivo_id": "<hash_mac_esp32>", "token": "<token_plano_esp32>" }
+
+    El ESP32 muestra el QR en su pantalla; el usuario lo escanea desde la app.
+    El token se guarda hasheado; nunca se persiste en texto plano.
+    """
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "Se esperaba un objeto JSON"}), 400
+
+    dispositivo_id = datos.get("dispositivo_id")
+    token = datos.get("token")
+
+    if not dispositivo_id or not isinstance(dispositivo_id, str) or not dispositivo_id.strip():
+        return jsonify({"error": "DATOS_INCOMPLETOS", "mensaje": "dispositivo_id es obligatorio"}), 400
+    if not token or not isinstance(token, str) or not token.strip():
+        return jsonify({"error": "DATOS_INCOMPLETOS", "mensaje": "token es obligatorio"}), 400
+
+    try:
+        resultado = contenedor_app.vincular_dispositivo_use_case.ejecutar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            dispositivo_id=dispositivo_id.strip(),
+            token_plano=token.strip(),
+        )
+        return jsonify({"mensaje": "Dispositivo vinculado correctamente", **resultado}), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
+
+
+@plantas_bp.route('/<int:planta_id>/dispositivo', methods=['DELETE'])
+@requiere_jwt
+def desvincular_dispositivo(planta_id):
+    """Desvincula el ESP32 de la planta. El dispositivo dejará de poder enviar mediciones."""
+    try:
+        contenedor_app.desvincular_dispositivo_use_case.ejecutar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+        )
+        return jsonify({"mensaje": "Dispositivo desvinculado correctamente"}), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
+
+
 @plantas_bp.route('/<int:planta_id>/historial', methods=['GET'])
 @requiere_jwt
 def historial(planta_id):
