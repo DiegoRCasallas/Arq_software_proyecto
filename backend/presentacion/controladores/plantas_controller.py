@@ -66,13 +66,13 @@ def crear_planta():
         return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "El nombre debe tener hasta 60 caracteres"}), 400
 
     try:
-        contenedor_app.tabla_referencia.obtener_perfil(especie.strip())
+        perfil = contenedor_app.tabla_referencia.obtener_perfil(especie.strip())
         from dominio.entidades.planta import Planta
 
         planta = Planta(
             id=None,
             usuario_id=g.usuario_id,
-            especie=especie.strip(),
+            especie=perfil.nombre_especie,
             apodo=apodo.strip() or None if apodo else None,
         )
         planta = contenedor_app.repo_plantas.guardar(planta)

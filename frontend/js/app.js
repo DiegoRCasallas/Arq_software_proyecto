@@ -12,10 +12,35 @@ const PARAMETER_LABELS = {
 };
 
 const CARE_TIPS = {
-    Cinta: [
+    cinta: [
         'Riega cuando la capa superior del sustrato empiece a secarse.',
         'Prefiere luz indirecta y espacios bien iluminados.',
         'Evita dejar agua acumulada en la maceta.',
+    ],
+    albahaca: [
+        'Requiere al menos 6 horas de luz solar o iluminación muy brillante.',
+        'Mantén el sustrato húmedo con buen drenaje, sin encharcar.',
+        'Poda los brotes florales para estimular hojas frescas y densas.',
+    ],
+    poto: [
+        'Tolera bien luz indirecta moderada y sombra parcial.',
+        'Deja secar ligeramente la capa superior de tierra entre riegos.',
+        'Limpia sus hojas ocasionalmente para mejorar la absorción de luz.',
+    ],
+    suculenta: [
+        'Riega de forma espaciada, permitiendo que la tierra se seque por completo.',
+        'Ubícala en un lugar con abundante luz directa para mantener su color.',
+        'Usa macetas con buen drenaje para proteger sus raíces.',
+    ],
+    helecho: [
+        'Mantén el sustrato uniformemente húmedo, sin permitir que se seque del todo.',
+        'Prefiere luz suave filtrada o semisombra; evita el sol directo.',
+        'Agradece la humedad ambiental; pulveriza agua cerca de sus frondas.',
+    ],
+    orquidea: [
+        'Riega por inmersión semanalmente y escurre todo el exceso de agua.',
+        'Necesita luz indirecta abundante pero nunca sol directo que queme sus hojas.',
+        'Utiliza sustrato poroso de corteza de pino para que sus raíces respiren.',
     ],
 };
 
@@ -201,7 +226,8 @@ async function cargarDetalles() {
         document.getElementById('fecha-medicion').textContent = ultima
             ? new Date(ultima.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
             : 'Sin datos';
-        const cuidados = CARE_TIPS[planta.especie] || [
+        const claveEspecie = (planta.especie || '').trim().toLowerCase();
+        const cuidados = CARE_TIPS[claveEspecie] || [
             'Revisa la humedad del sustrato antes de regar.',
             'Consulta los rangos de luz y temperatura de esta especie.',
             'Mantén un buen drenaje para evitar exceso de agua.',
@@ -340,7 +366,11 @@ async function cargarEspecies() {
     try {
         const especies = await API.getSpecies();
         select.innerHTML = '<option value="">Selecciona una especie</option>' +
-            especies.map(({ especie }) => `<option value="${escapeHTML(especie)}">${escapeHTML(especie)}</option>`).join('');
+            especies.map(({ especie }) => {
+                const nombreLimpio = escapeHTML(especie);
+                const nombreFormateado = escapeHTML(especie.charAt(0).toUpperCase() + especie.slice(1));
+                return `<option value="${nombreLimpio}">${nombreFormateado}</option>`;
+            }).join('');
         select.dataset.loaded = 'true';
     } catch (error) {
         select.innerHTML = '<option value="">No se pudieron cargar las especies</option>';
