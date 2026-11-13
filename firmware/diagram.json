@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "author": "Matera Inteligente",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "board-esp32-devkit-c-v4",
+      "id": "esp32",
+      "top": 0,
+      "left": 0,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-dht22",
+      "id": "dht22",
+      "top": -80,
+      "left": 230,
+      "attrs": { "temperature": "24", "humidity": "65" }
+    },
+    {
+      "type": "wokwi-ssd1306",
+      "id": "oled",
+      "top": 100,
+      "left": 230,
+      "attrs": { "i2cAddress": "0x3c" }
+    },
+    {
+      "type": "wokwi-bh1750",
+      "id": "bh1750",
+      "top": -80,
+      "left": 390,
+      "attrs": {}
+    },
+    {
+      "type": "wokwi-potentiometer",
+      "id": "suelo",
+      "top": 260,
+      "left": 230,
+      "attrs": { "label": "Humedad suelo (ADC)" }
+    },
+    {
+      "type": "wokwi-resistor",
+      "id": "r1",
+      "top": -30,
+      "left": 230,
+      "attrs": { "value": "10000" }
+    }
+  ],
+  "connections": [
+    ["esp32:GND.1", "dht22:GND", "black", []],
+    ["esp32:3V3",   "dht22:VCC", "red",   []],
+    ["esp32:IO4",   "dht22:SDA", "green", []],
+    ["dht22:SDA",   "r1:1",      "green", []],
+    ["r1:2",        "esp32:3V3", "red",   []],
+
+    ["esp32:GND.2", "oled:GND",  "black", []],
+    ["esp32:3V3",   "oled:VCC",  "red",   []],
+    ["esp32:IO21",  "oled:SDA",  "blue",  []],
+    ["esp32:IO22",  "oled:SCL",  "yellow",[]],
+
+    ["esp32:GND.1", "bh1750:GND","black", []],
+    ["esp32:3V3",   "bh1750:VCC","red",   []],
+    ["esp32:IO21",  "bh1750:SDA","blue",  []],
+    ["esp32:IO22",  "bh1750:SCL","yellow",[]],
+
+    ["esp32:IO34",  "suelo:SIG", "orange",[]],
+    ["esp32:GND.2", "suelo:GND", "black", []],
+    ["esp32:3V3",   "suelo:VCC", "red",   []]
+  ],
+  "dependencies": {}
+}
+
