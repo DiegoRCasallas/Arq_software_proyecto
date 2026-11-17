@@ -10,7 +10,14 @@ class TablaReferenciaSQL:
     """Adaptador de salida del puerto TablaReferencia respaldado por la base de datos."""
 
     def obtener_perfil(self, especie: str) -> PerfilEspecie:
-        especie_db = db.session.get(EspecieModelo, especie)
+        nombre_limpio = especie.strip() if especie else ""
+        especie_db = db.session.get(EspecieModelo, nombre_limpio)
+        if especie_db is None and nombre_limpio:
+            especie_db = db.session.scalar(
+                db.select(EspecieModelo).where(
+                    db.func.lower(EspecieModelo.nombre) == nombre_limpio.lower()
+                )
+            )
         if especie_db is None:
             raise EspecieNoEncontrada(especie)
         return self._a_perfil(especie_db)
