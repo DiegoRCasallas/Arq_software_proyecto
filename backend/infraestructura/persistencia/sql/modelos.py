@@ -44,6 +44,9 @@ class PlantaModelo(db.Model):
     apodo = db.Column(db.String)
     dispositivo_id = db.Column(db.String, unique=True)
     token_dispositivo_hash = db.Column(db.String)
+    experiencia = db.Column(db.Integer, nullable=False, default=0)
+    nivel = db.Column(db.Integer, nullable=False, default=1)
+    estado_animo = db.Column(db.String(30), nullable=False, default="FELIZ")
 
     mediciones = db.relationship('MedicionModelo', backref='planta', lazy=True)
 
