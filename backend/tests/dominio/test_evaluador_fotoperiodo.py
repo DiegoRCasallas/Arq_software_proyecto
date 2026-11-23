@@ -5,14 +5,18 @@ from dominio.valores.estado_parametro import EstadoParametro
 from dominio.valores.politica_fotoperiodo import PoliticaFotoperiodo
 from dominio.valores.rango_referencia import RangoReferencia
 
-
 def _rango_luz():
-    return RangoReferencia(minimo=300.0, maximo=1500.0)
-
+    return RangoReferencia(
+        parametro="luz",
+        minimo=0.0,
+        optimo_min=300.0,
+        optimo_max=1500.0,
+        maximo=100000.0,
+        unidad="lux",
+    )
 
 def _medicion(fecha, luz):
     return Medicion(planta_id=1, fecha=fecha, valores={"luz": luz})
-
 
 def test_noche_con_poca_luz_y_menos_de_14h_es_reposo_nocturno():
     evaluador = EvaluadorFotoperiodo(PoliticaFotoperiodo(18, 6, 14.0))
@@ -26,7 +30,6 @@ def test_noche_con_poca_luz_y_menos_de_14h_es_reposo_nocturno():
         historial,
     )
     assert estado == EstadoParametro.REPOSO_NOCTURNO
-
 
 def test_noche_pero_mas_de_14h_a_oscuras_dispara_alerta_bajo():
     evaluador = EvaluadorFotoperiodo(PoliticaFotoperiodo(18, 6, 14.0))
@@ -44,7 +47,6 @@ def test_noche_pero_mas_de_14h_a_oscuras_dispara_alerta_bajo():
     )
     assert estado == EstadoParametro.BAJO
 
-
 def test_dia_con_poca_luz_siempre_es_bajo():
     evaluador = EvaluadorFotoperiodo(PoliticaFotoperiodo(18, 6, 14.0))
     ahora = datetime(2026, 11, 23, 11, 0)  # 11:00 AM
@@ -56,7 +58,6 @@ def test_dia_con_poca_luz_siempre_es_bajo():
         [],
     )
     assert estado == EstadoParametro.BAJO
-
 
 def test_luz_optima_en_el_historial_reinicia_conteo_de_oscuridad():
     evaluador = EvaluadorFotoperiodo(PoliticaFotoperiodo(18, 6, 14.0))
