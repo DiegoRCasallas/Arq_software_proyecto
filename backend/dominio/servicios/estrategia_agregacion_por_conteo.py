@@ -1,32 +1,15 @@
-"""
-EstrategiaAgregacionPorConteo: implementación por defecto de la regla de
-agregación del índice de vitalidad (RF3).
-
-Regla elegida (documentada aquí y en docs/arquitectura.md):
-    - sin parámetros evaluables      -> INDETERMINADO (no hay evidencia)
-    - 0 parámetros fuera del óptimo  -> SALUDABLE
-    - 1 parámetro fuera del óptimo   -> EN_RIESGO
-    - 2 o más parámetros fuera del óptimo -> CRITICO
-
-Justificación: es una regla simple, predecible y fácil de probar, que no
-requiere ponderar la severidad de cada parámetro individualmente (esa es
-una posible extensión futura vía OCP: se podría inyectar una estrategia
-que pondere temperatura más que luz, por ejemplo, sin tocar EvaluadorPlanta).
-
-Vive en dominio/servicios (y no en infraestructura) porque es una regla de
-negocio, no un detalle técnico: no depende de Flask, CSV, ni nada externo.
-"""
 from dominio.valores.estado_parametro import EstadoParametro
 from dominio.valores.estado_planta import EstadoPlanta
 
-
 class EstrategiaAgregacionPorConteo:
+    ESTADOS_NORMALES = {EstadoParametro.OPTIMO, EstadoParametro.REPOSO_NOCTURNO}
+
     def calcular(self, estados: dict[str, EstadoParametro]) -> EstadoPlanta:
         if not estados:
             return EstadoPlanta.INDETERMINADO
 
         fuera_de_optimo = sum(
-            1 for estado in estados.values() if estado != EstadoParametro.OPTIMO
+            1 for estado in estados.values() if estado not in self.ESTADOS_NORMALES
         )
 
         if fuera_de_optimo == 0:
