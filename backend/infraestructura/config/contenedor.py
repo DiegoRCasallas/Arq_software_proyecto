@@ -2,6 +2,7 @@ import os
 from dominio.servicios.evaluador_planta import EvaluadorPlanta
 from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregacionPorConteo
 from dominio.servicios.generador_recomendaciones import GeneradorRecomendaciones
+from dominio.servicios.motor_gamificacion import MotorGamificacion
 from aplicacion.casos_uso.registrar_medicion import RegistrarMedicion
 from infraestructura.persistencia.sql.repositorio_mediciones_sql import RepositorioMedicionesSQL
 from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenciaSQL
@@ -31,12 +32,14 @@ class Contenedor:
             self.tabla_referencia = TablaReferenciaSQL()
 
         # 3. Ensamblar los Casos de Uso
+        self.motor_gamificacion = MotorGamificacion()
         self.registrar_medicion_use_case = RegistrarMedicion(
             repo_plantas=self.repo_plantas,
             hasher_tokens=self.hasher,
             tabla_referencia=self.tabla_referencia,
             evaluador_planta=self.evaluador,
-            repo_mediciones=self.repo_mediciones
+            repo_mediciones=self.repo_mediciones,
+            motor_gamificacion=self.motor_gamificacion,
         )
 
         # 4. Configurar Adaptadores de Seguridad y Usuarios
