@@ -12,13 +12,15 @@ const PARAMETER_LABELS = {
 };
 
 const CARITAS_ANIMO = {
-    FELIZ:     { cara: '( ˘ ▽ ˘ )',     texto: '¡Estoy feliz!',         color: '#1f7a4c' },
-    SEDIENTA:  { cara: '( ಥ_ಥ )',       texto: '¡Necesito agua!',       color: '#2563eb' },
-    SOFOCADA:  { cara: '( ＠_＠; )',     texto: '¡Hace mucho calor!',    color: '#dc2626' },
-    CON_FRIO:  { cara: '( ≧﹏≦ )',      texto: '¡Tengo frío!',          color: '#0284c7' },
-    SIN_LUZ:   { cara: '( -_- )',       texto: 'Necesito más luz',      color: '#d97706' },
-    DORMIDA:   { cara: '( ˘ω˘ ) zZ',    texto: 'Descansando…',          color: '#6d28d9' },
-    EN_RIESGO: { cara: '( x _ x )',     texto: '¡Revisa mis sensores!', color: '#dc2626' },
+    FELIZ:       { cara: '( ˘ ▽ ˘ )',     texto: '¡Estoy feliz!',         color: '#1f7a4c' },
+    SEDIENTA:    { cara: '( ಥ_ಥ )',       texto: '¡Necesito agua!',       color: '#2563eb' },
+    AHOGADA:     { cara: '( ◎_◎; ) ~',    texto: '¡Mucha agua!',          color: '#1d4ed8' },
+    SOFOCADA:    { cara: '( ＠_＠; )',     texto: '¡Hace mucho calor!',    color: '#dc2626' },
+    CON_FRIO:    { cara: '( ≧﹏≦ )',      texto: '¡Tengo frío!',          color: '#0284c7' },
+    SIN_LUZ:     { cara: '( -_- )',       texto: 'Necesito más luz',      color: '#d97706' },
+    DESLUMBRADA: { cara: '( >_< ) ☀',     texto: '¡Demasiada luz!',       color: '#ea580c' },
+    DORMIDA:     { cara: '( ˘ω˘ ) zZ',    texto: 'Descansando…',          color: '#6d28d9' },
+    EN_RIESGO:   { cara: '( x _ x )',     texto: '¡Revisa mis sensores!', color: '#dc2626' },
 };
 
 const CARE_TIPS = {
