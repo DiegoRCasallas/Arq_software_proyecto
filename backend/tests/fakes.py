@@ -41,6 +41,8 @@ class RepositorioPlantasFake:
     def obtener(self, planta_id: int) -> Optional[Planta]:
         return next((p for p in self._plantas if p.id == planta_id), None)
 
+    def actualizar(self, planta): self.plantas[planta.id] = planta
+
 
 class RepositorioMedicionesFake:
     def __init__(self):
