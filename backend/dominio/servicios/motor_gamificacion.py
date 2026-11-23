@@ -51,7 +51,7 @@ class MotorGamificacion:
         if diagnostico_actual.estado_planta == EstadoPlanta.SALUDABLE:
             return ResultadoGamificacion(
                 delta_xp=self.XP_MEDICION_OPTIMA,
-                estado_animo=EstadoAnimo.FELIZ,
+                estado_animo=animo,  # <-- usa `animo` en vez de forzar EstadoAnimo.FELIZ
                 motivo="Parámetros en rango óptimo.",
             )
 
@@ -108,5 +108,9 @@ class MotorGamificacion:
             return EstadoAnimo.SIN_LUZ
         if estados.get("luz") == EstadoParametro.ALTO:
             return EstadoAnimo.DESLUMBRADA
+        if diagnostico.estado_planta == EstadoPlanta.SALUDABLE:
+            if diagnostico.estados.get("luz") == EstadoParametro.REPOSO_NOCTURNO:
+                return EstadoAnimo.DORMIDA
+            return EstadoAnimo.FELIZ
 
         return EstadoAnimo.EN_RIESGO
