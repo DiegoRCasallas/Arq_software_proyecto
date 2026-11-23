@@ -27,7 +27,7 @@ static const uint32_t INTERVALO_MS = 10000;
 
 // Calibracion del modulo LDR:
 // Si al tapar el sensor el valor en Monitor Serial SUBE, cambia LDR_INVERTIDO a 1.
-#define LDR_INVERTIDO 0
+#define LDR_INVERTIDO 1
 #define LDR_LUX_MAX 2000.0f // Rango aproximado de luz interior (0 a 2000 lux)
 
 #define OLED_W 128
