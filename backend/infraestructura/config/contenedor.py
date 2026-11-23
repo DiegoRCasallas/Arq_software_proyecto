@@ -4,6 +4,7 @@ from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregac
 from dominio.servicios.generador_recomendaciones import GeneradorRecomendaciones
 from dominio.servicios.motor_gamificacion import MotorGamificacion
 from aplicacion.casos_uso.registrar_medicion import RegistrarMedicion
+from aplicacion.casos_uso.registrar_partida_minijuego import RegistrarPartidaMinijuego
 from infraestructura.persistencia.sql.repositorio_mediciones_sql import RepositorioMedicionesSQL
 from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenciaSQL
 from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenciaCSV
@@ -39,6 +40,11 @@ class Contenedor:
             tabla_referencia=self.tabla_referencia,
             evaluador_planta=self.evaluador,
             repo_mediciones=self.repo_mediciones,
+            motor_gamificacion=self.motor_gamificacion,
+        )
+
+        self.registrar_partida_minijuego_use_case = RegistrarPartidaMinijuego(
+            repo_plantas=self.repo_plantas,
             motor_gamificacion=self.motor_gamificacion,
         )
 
