@@ -11,6 +11,16 @@ const PARAMETER_LABELS = {
     luz: 'Luz',
 };
 
+const CARITAS_ANIMO = {
+    FELIZ:     { cara: '( ˘ ▽ ˘ )',     texto: '¡Estoy feliz!',         color: '#1f7a4c' },
+    SEDIENTA:  { cara: '( ಥ_ಥ )',       texto: '¡Necesito agua!',       color: '#2563eb' },
+    SOFOCADA:  { cara: '( ＠_＠; )',     texto: '¡Hace mucho calor!',    color: '#dc2626' },
+    CON_FRIO:  { cara: '( ≧﹏≦ )',      texto: '¡Tengo frío!',          color: '#0284c7' },
+    SIN_LUZ:   { cara: '( -_- )',       texto: 'Necesito más luz',      color: '#d97706' },
+    DORMIDA:   { cara: '( ˘ω˘ ) zZ',    texto: 'Descansando…',          color: '#6d28d9' },
+    EN_RIESGO: { cara: '( x _ x )',     texto: '¡Revisa mis sensores!', color: '#dc2626' },
+};
+
 const CARE_TIPS = {
     cinta: [
         'Riega cuando la capa superior del sustrato empiece a secarse.',
@@ -159,7 +169,7 @@ async function cargarPlantas() {
                     <span class="plant-avatar" aria-hidden="true">🪴</span>
                     <span class="plant-card-content">
                         <span class="plant-card-top"><strong>${escapeHTML(nombre)}</strong><span class="status-pill ${claseEstado(estado)}">${traducirEstado(estado)}</span></span>
-                        <span class="plant-species">${escapeHTML(planta.especie)}</span>
+                        <span class="plant-species">${escapeHTML(planta.especie)} · Nivel ${escapeHTML(planta.gamificacion?.nivel ?? 1)}</span>
                         <span class="plant-reading">${escapeHTML(detalleLectura)}</span>
                     </span>
                     <span class="plant-chevron" aria-hidden="true">›</span>
@@ -211,13 +221,35 @@ async function cargarDetalles() {
     try {
         const planta = await API.getPlant(appState.plantId);
         appState.plant = planta;
+
+        const gamif = planta.gamificacion || {
+            nivel: 1,
+            xp_nivel_actual: 0,
+            xp_siguiente_nivel: 100,
+            porcentaje_nivel: 0,
+            estado_animo: 'FELIZ',
+        };
+        const animo = CARITAS_ANIMO[gamif.estado_animo] || CARITAS_ANIMO.FELIZ;
+
         perfil.className = 'detail-profile';
         perfil.innerHTML = `
-            <div class="large-plant-avatar" aria-hidden="true">🪴</div>
+            <div class="large-plant-avatar gamif-avatar" aria-label="${escapeHTML(animo.texto)}">
+                <span class="gamif-face" style="color: ${animo.color};">${escapeHTML(animo.cara)}</span>
+                <span class="gamif-mood">${escapeHTML(animo.texto)}</span>
+            </div>
             <div class="detail-profile-copy">
                 <span class="eyebrow">${escapeHTML(planta.especie)}</span>
                 <h2>${escapeHTML(planta.apodo || planta.especie)}</h2>
                 <span class="connection-note ${planta.dispositivo_conectado ? 'connected' : ''}">${planta.dispositivo_conectado ? '● Dispositivo conectado' : '○ Dispositivo pendiente de conexión'}</span>
+                <div class="gamif-progress">
+                    <div class="gamif-progress-header">
+                        <strong>Nivel ${escapeHTML(gamif.nivel)}</strong>
+                        <span>${escapeHTML(gamif.xp_nivel_actual)} / ${escapeHTML(gamif.xp_siguiente_nivel)} XP</span>
+                    </div>
+                    <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="gamif-xp-fill" style="width: ${escapeHTML(gamif.porcentaje_nivel)}%;"></div>
+                    </div>
+                </div>
             </div>`;
 
         const ultima = planta.ultima_medicion;
