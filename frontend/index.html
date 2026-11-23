@@ -119,6 +119,7 @@
             </section>
             <div class="detail-actions">
                 <button id="btn-diagnosticar" class="btn btn-primary" type="button">Ver diagnóstico</button>
+                <button id="btn-jugar-minijuego" class="btn btn-outline" type="button">🎮 Jugar minijuego (+XP)</button>
                 <button id="btn-conectar" class="btn btn-secondary" type="button">Conectar a internet</button>
             </div>
         </section>
@@ -143,6 +144,22 @@
             </header>
             <div id="contenido-diagnostico" class="diagnosis-content" aria-live="polite"></div>
             <button class="btn btn-primary" type="button" data-screen="detalles">Volver a mi planta</button>
+        </section>
+
+        <section id="pantalla-minijuego" class="pantalla app-screen">
+            <header class="subpage-header">
+                <button class="back-button" type="button" data-screen="detalles" aria-label="Volver al detalle">←</button>
+                <h1>Cuida tu planta</h1>
+                <span class="header-spacer" aria-hidden="true"></span>
+            </header>
+            <p class="muted page-intro">Toca 💧 y ☀️ para sumar puntos. Evita las plagas 🐛.</p>
+            <div class="minigame-hud">
+                <span>⏱️ <strong id="mg-tiempo">20</strong>s</span>
+                <span>⭐ <strong id="mg-puntaje">0</strong> pts</span>
+            </div>
+            <div id="mg-tablero" class="minigame-board" aria-label="Área de juego"></div>
+            <div id="mg-resultado" class="content-card" hidden></div>
+            <button id="btn-iniciar-mg" class="btn btn-primary" type="button">Empezar partida</button>
         </section>
 
         <section id="pantalla-add-planta" class="pantalla app-screen">
