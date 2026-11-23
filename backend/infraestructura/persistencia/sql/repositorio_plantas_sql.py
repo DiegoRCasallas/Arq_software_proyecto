@@ -23,6 +23,8 @@ class RepositorioPlantasSQL:
             experiencia=planta_db.experiencia,
             nivel=planta_db.nivel,
             estado_animo=EstadoAnimo(planta_db.estado_animo),
+            xp_minijuego_hoy=planta_db.xp_minijuego_hoy,
+            fecha_ultimo_minijuego=planta_db.fecha_ultimo_minijuego,
         )
 
     def obtener_por_dispositivo(self, dispositivo_id: str):
@@ -48,6 +50,8 @@ class RepositorioPlantasSQL:
             experiencia=planta.experiencia,
             nivel=planta.nivel,
             estado_animo=planta.estado_animo.value,
+            xp_minijuego_hoy=planta.xp_minijuego_hoy,
+            fecha_ultimo_minijuego=planta.fecha_ultimo_minijuego,
         )
         db.session.add(planta_db)
         db.session.commit()
@@ -62,6 +66,8 @@ class RepositorioPlantasSQL:
         planta_db.experiencia = planta.experiencia
         planta_db.nivel = planta.nivel
         planta_db.estado_animo = planta.estado_animo.value
+        planta_db.xp_minijuego_hoy = planta.xp_minijuego_hoy
+        planta_db.fecha_ultimo_minijuego = planta.fecha_ultimo_minijuego
         db.session.commit()
 
     def actualizar_dispositivo(self, planta_id: int, dispositivo_id, token_hash) -> None:
