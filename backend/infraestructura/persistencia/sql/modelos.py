@@ -47,6 +47,8 @@ class PlantaModelo(db.Model):
     experiencia = db.Column(db.Integer, nullable=False, default=0)
     nivel = db.Column(db.Integer, nullable=False, default=1)
     estado_animo = db.Column(db.String(30), nullable=False, default="FELIZ")
+    xp_minijuego_hoy = db.Column(db.Integer, nullable=False, default=0)
+    fecha_ultimo_minijuego = db.Column(db.Date, nullable=True)
 
     mediciones = db.relationship('MedicionModelo', backref='planta', lazy=True)
 
