@@ -1,4 +1,7 @@
 from typing import Optional
+from datetime import date
+from typing import Optional
+from dominio.valores.estado_animo import EstadoAnimo
 from dominio.valores.estado_animo import EstadoAnimo
 
 class Planta:
@@ -13,6 +16,8 @@ class Planta:
         experiencia: int = 0, 
         nivel: int = 1, 
         estado_animo: EstadoAnimo = EstadoAnimo.FELIZ
+        xp_minijuego_hoy: int = 0, 
+        fecha_ultimo_minijuego: Optional[date] = None
     ):
         self.id = id
         self.usuario_id = usuario_id
@@ -32,6 +37,18 @@ class Planta:
 
     def actualizar_animo(self, nuevo_animo: EstadoAnimo) -> None:
         self.estado_animo = nuevo_animo
+
+    def xp_minijuego_del_dia(self, hoy: date) -> int:
+        if self.fecha_ultimo_minijuego != hoy:
+            return 0
+        return self.xp_minijuego_hoy
+
+    def registrar_xp_minijuego(self, xp: int, hoy: date) -> None:
+        if self.fecha_ultimo_minijuego != hoy:
+            self.xp_minijuego_hoy = 0
+            self.fecha_ultimo_minijuego = hoy
+        self.xp_minijuego_hoy += xp
+        self.aplicar_experiencia(xp)
 
     def resumen_gamificacion(self) -> dict:
         xp_en_nivel = self.experiencia % 100
