@@ -75,6 +75,7 @@ function traducirEstado(estado) {
         BAJO: 'Bajo',
         OPTIMO: 'Óptimo',
         ALTO: 'Alto',
+        REPOSO_NOCTURNO: 'En reposo (noche)',
     })[estado] || 'Sin datos';
 }
 
@@ -87,6 +88,7 @@ function claseEstado(estado) {
         BAJO: 'warning',
         OPTIMO: 'healthy',
         ALTO: 'warning',
+        REPOSO_NOCTURNO: 'healthy',
     })[estado] || 'neutral';
 }
 
