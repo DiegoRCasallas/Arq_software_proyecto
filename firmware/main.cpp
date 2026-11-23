@@ -13,7 +13,7 @@
 
 // ---------- CONFIGURACION ----------
 // Cambia esta IP por la de tu PC (en Ubuntu: hostname -I) o tu URL de Railway
-static const char *API_BASE_URL = "http://192.168.78.182:5000";
+static const char *API_BASE_URL = "http://172.20.10.2:5000";
 static const char *DEVICE_ID = "ESP32_TEST_001";
 static const char *DEVICE_TOKEN = "token_secreto_123";
 static const uint32_t INTERVALO_MS = 10000;
