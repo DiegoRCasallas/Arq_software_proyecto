@@ -10,6 +10,7 @@ from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenci
 from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenciaCSV
 from infraestructura.persistencia.sql.repositorio_plantas_sql import RepositorioPlantasSQL
 from infraestructura.seguridad.hasher_werkzeug import HasherWerkzeug
+from infraestructura.tiempo.reloj_sistema import RelojSistema
 from aplicacion.casos_uso.consultar_historial import ConsultarHistorial
 from aplicacion.casos_uso.listar_especies import ListarEspeciesUseCase
 
@@ -34,13 +35,15 @@ class Contenedor:
 
         # 3. Ensamblar los Casos de Uso
         self.motor_gamificacion = MotorGamificacion()
+        self.reloj = RelojSistema(zona_horaria="America/Bogota")
         self.registrar_medicion_use_case = RegistrarMedicion(
-            repo_plantas=self.repo_plantas,
             hasher_tokens=self.hasher,
-            tabla_referencia=self.tabla_referencia,
-            evaluador_planta=self.evaluador,
+            repo_plantas=self.repo_plantas,
             repo_mediciones=self.repo_mediciones,
+            tabla_referencia=self.tabla_referencia,
+            evaluador=self.evaluador,
             motor_gamificacion=self.motor_gamificacion,
+            proveedor_tiempo=self.reloj,
         )
 
         self.registrar_partida_minijuego_use_case = RegistrarPartidaMinijuego(
