@@ -27,6 +27,7 @@ def _serializar_planta(planta, historial=None):
         "apodo": planta.apodo,
         "especie": planta.especie,
         "dispositivo_conectado": bool(planta.dispositivo_id),
+        "gamificacion": planta.resumen_gamificacion(),
         "ultima_medicion": ultima_medicion,
     }
 
