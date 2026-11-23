@@ -25,8 +25,8 @@ class RegistrarMedicion:
                  hasher_tokens: HasherContrasenas,
                  tabla_referencia: TablaReferencia,
                  evaluador_planta: EvaluadorPlanta,
-                 motor_gamificacion=None,
-                 repo_mediciones: RepositorioMediciones):
+                 repo_mediciones: RepositorioMediciones,
+                 motor_gamificacion=None):
         # Inyección de dependencias (Puertos)
         self.repo_plantas = repo_plantas
         self.hasher_tokens = hasher_tokens
@@ -52,7 +52,7 @@ class RegistrarMedicion:
         # 4.Gamificación
         previas = self.repo_mediciones.historial(planta.id, limite=1)
         diagnostico_anterior = (
-            self.evaluador.evaluar(previas[0], perfil_especie) if previas else None
+            self.evaluador_planta.evaluar(previas[0], perfil_especie) if previas else None
         )
 
         # 5. Evaluar y guardar en el historial.

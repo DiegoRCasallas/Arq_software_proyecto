@@ -1,7 +1,6 @@
-from typing import Optional
 from datetime import date
 from typing import Optional
-from dominio.valores.estado_animo import EstadoAnimo
+
 from dominio.valores.estado_animo import EstadoAnimo
 
 class Planta:
@@ -15,7 +14,7 @@ class Planta:
         token_dispositivo_hash: Optional[str] = None,
         experiencia: int = 0, 
         nivel: int = 1, 
-        estado_animo: EstadoAnimo = EstadoAnimo.FELIZ
+        estado_animo: EstadoAnimo = EstadoAnimo.FELIZ,
         xp_minijuego_hoy: int = 0, 
         fecha_ultimo_minijuego: Optional[date] = None
     ):
@@ -25,6 +24,11 @@ class Planta:
         self.apodo = apodo
         self.dispositivo_id = dispositivo_id
         self.token_dispositivo_hash = token_dispositivo_hash
+        self.experiencia = experiencia
+        self.nivel = nivel
+        self.estado_animo = estado_animo
+        self.xp_minijuego_hoy = xp_minijuego_hoy
+        self.fecha_ultimo_minijuego = fecha_ultimo_minijuego
 
     def pertenece_a(self, usuario_id: int) -> bool:
         """Regla de negocio: Verifica si la planta pertenece a un usuario específico"""

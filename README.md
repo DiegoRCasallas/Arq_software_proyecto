@@ -95,7 +95,8 @@ El frontend web es mobile-first e incluye bienvenida, registro/inicio de sesión
 ### Contrato de `POST /api/v1/dispositivos/<id>/mediciones`
 
 Cabecera `X-Device-Token: <token>` y cuerpo `{"valores": {"temperatura": 22, "humedad": 50, "luz": 800}}`.
-Una medición se acepta **completa o no se acepta**: si falla cualquier regla, no se guarda nada.
+Puede enviarse un conjunto parcial de parámetros cuando solo hay algunos sensores conectados.
+Si falla cualquier regla sobre los valores enviados, no se guarda nada.
 
 | Situación | HTTP | `error` |
 |---|---|---|
@@ -105,7 +106,6 @@ Una medición se acepta **completa o no se acepta**: si falla cualquier regla, n
 | Cuerpo que no es JSON, o sin objeto `valores` no vacío | 400 | `PARAMETRO_AUSENTE` |
 | Valor `null`, texto no numérico, booleano, `NaN` o infinito | 400 | `VALOR_NO_NUMERICO` |
 | Parámetro que la especie no define (p. ej. `ph`) | 400 | `PARAMETRO_DESCONOCIDO` |
-| Falta un parámetro que la especie sí define | 400 | `PARAMETRO_AUSENTE` |
 | Valor fuera de `[minimo, maximo]` del rango (físicamente imposible) | 400 | `VALOR_FUERA_DE_RANGO_FISICO` |
 | Error inesperado del servidor | 500 | `ERROR_INTERNO` |
 

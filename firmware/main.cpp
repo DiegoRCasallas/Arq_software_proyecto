@@ -45,6 +45,7 @@ static const uint32_t INTERVALO_MS = 10000;
 Adafruit_SSD1306 oled(OLED_W, OLED_H, &Wire, -1);
 DHT dht(PIN_DHT, DHT_TYPE);
 BH1750 luxometro;
+bool luxometro_conectado = false;
 
 struct Respuesta {
   int http = 0;
@@ -78,23 +79,46 @@ void pantalla(const String &linea1, const String &grande, const String &l3 = "",
   oled.display();
 }
 
-float leerHumedad(float humedadAireDht) {
+struct LecturaSuelo {
+  bool conectado = false;
+  float porcentaje = 0.0f;
+};
+
+LecturaSuelo leerHumedad(float humedadAireDht) {
 #if HUMEDAD_DESDE_SUELO
-  int raw = analogRead(PIN_SOIL);
+  long suma = 0;
+  int minimo = 4095;
+  int maximo = 0;
+  for (int i = 0; i < 10; i++) {
+    int raw = analogRead(PIN_SOIL);
+    suma += raw;
+    minimo = min(minimo, raw);
+    maximo = max(maximo, raw);
+  }
+
+  // PIN_SOIL pegado a tierra o a 3.3 V indica que no hay conexion util.
+  if (maximo == 0 || minimo == 4095)
+    return {};
+
+  int raw = (int)(suma / 10);
   float pct =
       (float)(SOIL_RAW_SECO - raw) * 100.0f / (SOIL_RAW_SECO - SOIL_RAW_HUMEDO);
-  return constrain(pct, 0.0f, 100.0f);
+  return {true, constrain(pct, 0.0f, 100.0f)};
 #else
-  return humedadAireDht;
+  return {true, humedadAireDht};
 #endif
 }
 
-Respuesta enviar(float temperatura, float humedad, float luz) {
+Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
+                 float humedad, bool hayLuz, float luz) {
   Respuesta r;
   JsonDocument doc;
-  doc["valores"]["temperatura"] = temperatura;
-  doc["valores"]["humedad"] = humedad;
-  doc["valores"]["luz"] = luz;
+  if (hayTemperatura)
+    doc["valores"]["temperatura"] = temperatura;
+  if (hayHumedad)
+    doc["valores"]["humedad"] = humedad;
+  if (hayLuz)
+    doc["valores"]["luz"] = luz;
   String cuerpo;
   serializeJson(doc, cuerpo);
 
@@ -154,7 +178,8 @@ void setup() {
   pantalla("Matera inteligente", "Iniciando");
 
   dht.begin();
-  luxometro.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);
+  luxometro_conectado =
+      luxometro.begin(BH1750::CONTINUOUS_HIGH_RES_MODE);
   analogReadResolution(12);
 
   pantalla("WiFi", "Configurar red", "AP: Matera-Setup", "192.168.4.1");
@@ -181,23 +206,32 @@ void loop() {
 
   float t = dht.readTemperature();
   float hAire = dht.readHumidity();
-  float lux = luxometro.readLightLevel();
-  float h = leerHumedad(hAire);
+  bool hayTemperatura = !isnan(t);
+  LecturaSuelo lecturaSuelo = leerHumedad(hAire);
+  bool hayHumedad = lecturaSuelo.conectado &&
+                    (HUMEDAD_DESDE_SUELO || !isnan(hAire));
+  float h = lecturaSuelo.porcentaje;
+  float lux = luxometro_conectado ? luxometro.readLightLevel() : -1.0f;
+  bool hayLuz = luxometro_conectado && lux >= 0;
 
-  // El backend rechaza NaN/null (400 VALOR_NO_NUMERICO): no se envia una
-  // lectura rota.
-  if (isnan(t) || isnan(h) || lux < 0) {
-    pantalla("Error de sensor", "REVISAR", isnan(t) ? "DHT sin lectura" : "",
-             lux < 0 ? "BH1750 sin lectura" : "");
+  if (!hayTemperatura && !hayHumedad && !hayLuz) {
+    pantalla("Error de sensores", "SIN DATOS");
     return;
   }
 
-  Serial.printf("T=%.1f H=%.1f L=%.0f\n", t, h, lux);
-  Respuesta r = enviar(t, h, lux);
+  Serial.printf("T=%s H=%s L=%s\n",
+                hayTemperatura ? String(t, 1).c_str() : "NC",
+                hayHumedad ? String(h, 1).c_str() : "NC",
+                hayLuz ? String(lux, 0).c_str() : "NC");
+  Respuesta r =
+      enviar(hayTemperatura, t, hayHumedad, h, hayLuz, lux);
 
-  String l3 = "T " + String(t, 1) + "C " + abrev(r.t);
-  String l4 = "H " + String(h, 0) + "% " + abrev(r.h);
-  String l5 = "L " + String(lux, 0) + "lx " + abrev(r.l);
+  String l3 = hayTemperatura ? "T " + String(t, 1) + "C " + abrev(r.t)
+                             : "T desconectado";
+  String l4 = hayHumedad ? "H " + String(h, 0) + "% " + abrev(r.h)
+                         : "H desconectado";
+  String l5 = hayLuz ? "L " + String(lux, 0) + "lx " + abrev(r.l)
+                     : "L desconectado";
   String cab = "HTTP " + String(r.http);
   // estado puede ser largo (CRITICO/EN_RIESGO) -> size 2 cabe ~10 caracteres
   pantalla(cab, r.http == 201 ? r.estado : "ERROR", l3, l4,

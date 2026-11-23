@@ -4,7 +4,6 @@ import pytest
 
 from dominio.entidades.medicion import Medicion
 from dominio.excepciones.errores_dominio import (
-    ParametroAusente,
     ParametroDesconocido,
     ValorFueraDeRangoFisico,
 )
@@ -41,13 +40,13 @@ def test_medicion_solo_con_parametros_desconocidos_se_rechaza():
         perfil_cinta().validar_medicion(medicion(ph=7.0))
 
 
-@pytest.mark.parametrize("faltante", ["temperatura", "humedad", "luz"])
-def test_parametro_faltante_se_rechaza(faltante):
-    valores = {"temperatura": 22, "humedad": 50, "luz": 800}
-    del valores[faltante]
-    with pytest.raises(ParametroAusente) as error:
-        perfil_cinta().validar_medicion(medicion(**valores))
-    assert error.value.nombre_parametro == faltante
+@pytest.mark.parametrize("valores", [
+    {"temperatura": 22},
+    {"humedad": 50},
+    {"luz": 800},
+])
+def test_medicion_parcial_con_sensores_conectados_es_aceptada(valores):
+    perfil_cinta().validar_medicion(medicion(**valores))
 
 
 @pytest.mark.parametrize("parametro,valor", [

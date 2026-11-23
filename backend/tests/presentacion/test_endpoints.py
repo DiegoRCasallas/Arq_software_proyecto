@@ -67,6 +67,14 @@ def test_medicion_anomala_pero_posible_es_critica_y_se_guarda(app, client):
     assert contar_mediciones(app) == 1
 
 
+def test_medicion_parcial_de_sensores_conectados_es_aceptada(app, client):
+    respuesta = enviar(client, {"temperatura": 22})
+
+    assert respuesta.status_code == 201
+    assert respuesta.get_json()["detalle_parametros"] == {"temperatura": "OPTIMO"}
+    assert contar_mediciones(app) == 1
+
+
 @pytest.mark.parametrize("valores", [
     {"temperatura": -10, "humedad": 0, "luz": 0},          # límites físicos inferiores exactos
     {"temperatura": 50, "humedad": 100, "luz": 50000},     # límites físicos superiores exactos
@@ -91,7 +99,6 @@ CASOS_RECHAZADOS = [
     ("objeto", {"temperatura": {"v": 22}, "humedad": 50, "luz": 800}, "VALOR_NO_NUMERICO"),
     ("parametro desconocido", {**NORMAL, "ph": 7.0}, "PARAMETRO_DESCONOCIDO"),
     ("solo parametros desconocidos", {"ph": 7.0}, "PARAMETRO_DESCONOCIDO"),
-    ("parametro ausente", {"temperatura": 22}, "PARAMETRO_AUSENTE"),
     ("valores vacio", {}, "PARAMETRO_AUSENTE"),
     ("temperatura imposible", {**NORMAL, "temperatura": 9999}, "VALOR_FUERA_DE_RANGO_FISICO"),
     ("humedad negativa", {**NORMAL, "humedad": -5}, "VALOR_FUERA_DE_RANGO_FISICO"),

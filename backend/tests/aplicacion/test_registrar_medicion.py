@@ -90,10 +90,10 @@ def test_parametro_desconocido_se_rechaza_y_no_guarda(caso_de_uso, repo_medicion
     assert repo_mediciones.guardadas == []
 
 
-def test_medicion_incompleta_se_rechaza_y_no_guarda(caso_de_uso, repo_mediciones):
-    with pytest.raises(ParametroAusente):
-        caso_de_uso.ejecutar(DISPOSITIVO, TOKEN, medicion(temperatura=22))
-    assert repo_mediciones.guardadas == []
+def test_medicion_parcial_se_guarda(caso_de_uso, repo_mediciones):
+    diagnostico = caso_de_uso.ejecutar(DISPOSITIVO, TOKEN, medicion(temperatura=22))
+    assert len(repo_mediciones.guardadas) == 1
+    assert diagnostico.estado_planta == EstadoPlanta.SALUDABLE
 
 
 def test_valor_fisicamente_imposible_se_rechaza_y_no_guarda(caso_de_uso, repo_mediciones):
