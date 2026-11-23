@@ -25,6 +25,7 @@ class RegistrarMedicion:
                  hasher_tokens: HasherContrasenas,
                  tabla_referencia: TablaReferencia,
                  evaluador_planta: EvaluadorPlanta,
+                 motor_gamificacion=None,
                  repo_mediciones: RepositorioMediciones):
         # Inyección de dependencias (Puertos)
         self.repo_plantas = repo_plantas
@@ -32,6 +33,7 @@ class RegistrarMedicion:
         self.tabla_referencia = tabla_referencia
         self.evaluador_planta = evaluador_planta
         self.repo_mediciones = repo_mediciones
+        self.motor_gamificacion = motor_gamificacion
 
     def ejecutar(self, dispositivo_id: str, token_plano: str, medicion: Medicion) -> DiagnosticoPlanta:
         # 1. Autenticar al dispositivo. "No existe" y "token incorrecto" son
@@ -47,9 +49,21 @@ class RegistrarMedicion:
         # 3. Rechazar lo que no se debe aceptar ni guardar.
         perfil_especie.validar_medicion(medicion)
 
-        # 4. Evaluar y guardar en el historial.
+        # 4.Gamificación
+        previas = self.repo_mediciones.historial(planta.id, limite=1)
+        diagnostico_anterior = (
+            self.evaluador.evaluar(previas[0], perfil_especie) if previas else None
+        )
+
+        # 5. Evaluar y guardar en el historial.
         medicion.planta_id = planta.id
         diagnostico = self.evaluador_planta.evaluar(medicion, perfil_especie)
         self.repo_mediciones.guardar(medicion)
 
         return diagnostico
+
+        if self.motor_gamificacion:
+          resultado_gamif = self.motor_gamificacion.calcular(diagnostico, diagnostico_anterior)
+          planta.aplicar_experiencia(resultado_gamif.delta_xp)
+          planta.actualizar_animo(resultado_gamif.estado_animo)
+          self.repo_plantas.actualizar(planta)  # Persiste los nuevos puntos y ánimo
