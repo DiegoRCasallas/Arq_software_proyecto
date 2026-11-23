@@ -118,7 +118,7 @@ function mostrarPantalla(idActiva) {
 
     const nav = document.getElementById('menu-inferior');
     const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
-    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && idActiva !== 'diagnostico';
+    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego'].includes(idActiva);
     nav.hidden = !navVisible;
     document.body.classList.toggle('diagnosis-active', idActiva === 'diagnostico');
     document.querySelectorAll('.nav-item').forEach((item) => {
@@ -126,10 +126,12 @@ function mostrarPantalla(idActiva) {
     });
 
     localStorage.setItem('pantalla_actual', idActiva);
+    if (idActiva !== 'minijuego') detenerMinijuego();
     if (idActiva === 'mis-plantas') cargarPlantas();
     if (idActiva === 'detalles') cargarDetalles();
     if (idActiva === 'historial') cargarHistorial();
     if (idActiva === 'diagnostico') cargarDiagnostico();
+    if (idActiva === 'minijuego') prepararMinijuego();
     if (idActiva === 'add-planta') cargarEspecies();
     if (idActiva === 'ajustes') cargarAjustes();
 }
@@ -432,6 +434,105 @@ function limpiarErrorFormulario(formulario) {
     formulario.querySelector('.form-error')?.remove();
 }
 
+const minigameState = {
+    activo: false,
+    puntaje: 0,
+    tiempo: 20,
+    intervaloTiempo: null,
+    intervaloSpawn: null,
+};
+
+function detenerMinijuego() {
+    minigameState.activo = false;
+    window.clearInterval(minigameState.intervaloTiempo);
+    window.clearInterval(minigameState.intervaloSpawn);
+    const tablero = document.getElementById('mg-tablero');
+    if (tablero) tablero.innerHTML = '';
+}
+
+function prepararMinijuego() {
+    if (!appState.plantId) {
+        mostrarPantalla('mis-plantas');
+        return;
+    }
+    detenerMinijuego();
+    document.getElementById('mg-tiempo').textContent = '20';
+    document.getElementById('mg-puntaje').textContent = '0';
+    document.getElementById('mg-resultado').hidden = true;
+    const btn = document.getElementById('btn-iniciar-mg');
+    btn.disabled = false;
+    btn.textContent = 'Empezar partida';
+}
+
+function crearElementoMinijuego() {
+    if (!minigameState.activo) return;
+    const tablero = document.getElementById('mg-tablero');
+    const opciones = [
+        { emoji: '💧', puntos: 10 },
+        { emoji: '☀️', puntos: 10 },
+        { emoji: '🐛', puntos: -15 },
+    ];
+    const item = opciones[Math.floor(Math.random() * opciones.length)];
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mg-item';
+    btn.textContent = item.emoji;
+    btn.style.left = `${8 + Math.random() * 76}%`;
+
+    btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (!minigameState.activo) return;
+        minigameState.puntaje = Math.max(0, minigameState.puntaje + item.puntos);
+        document.getElementById('mg-puntaje').textContent = String(minigameState.puntaje);
+        btn.remove();
+    });
+
+    tablero.appendChild(btn);
+    window.setTimeout(() => btn.remove(), 2200);
+}
+
+async function finalizarMinijuego() {
+    const puntajeFinal = minigameState.puntaje;
+    detenerMinijuego();
+    const resBox = document.getElementById('mg-resultado');
+    const btn = document.getElementById('btn-iniciar-mg');
+    resBox.hidden = false;
+    resBox.innerHTML = '<p class="loading-message">Guardando experiencia…</p>';
+
+    try {
+        const res = await API.playMinigame(appState.plantId, puntajeFinal);
+        const msgTope = res.tope_diario_alcanzado
+            ? '<p class="muted">Alcanzaste el límite diario de XP por minijuego. ¡Vuelve mañana!</p>'
+            : `<p class="muted">Aún puedes ganar ${escapeHTML(res.xp_restante_hoy)} XP hoy jugando.</p>`;
+        resBox.innerHTML = `
+            <h3>¡Partida terminada!</h3>
+            <p>Puntaje: <strong>${escapeHTML(puntajeFinal)}</strong> · Ganaste <strong>+${escapeHTML(res.xp_ganada)} XP</strong></p>
+            <p>Nivel actual: <strong>${escapeHTML(res.gamificacion.nivel)}</strong> (${escapeHTML(res.gamificacion.xp_nivel_actual)}/${escapeHTML(res.gamificacion.xp_siguiente_nivel)} XP)</p>
+            ${msgTope}`;
+    } catch (error) {
+        resBox.innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Jugar de nuevo';
+    }
+}
+
+function iniciarMinijuego() {
+    prepararMinijuego();
+    minigameState.activo = true;
+    minigameState.puntaje = 0;
+    minigameState.tiempo = 20;
+    document.getElementById('btn-iniciar-mg').disabled = true;
+
+    minigameState.intervaloSpawn = window.setInterval(crearElementoMinijuego, 550);
+    minigameState.intervaloTiempo = window.setInterval(() => {
+        minigameState.tiempo -= 1;
+        document.getElementById('mg-tiempo').textContent = String(minigameState.tiempo);
+        if (minigameState.tiempo <= 0) finalizarMinijuego();
+    }, 1000);
+}
+
 function configurarEventos() {
     document.addEventListener('click', (evento) => {
         const navegacion = evento.target.closest('[data-screen]');
@@ -524,6 +625,11 @@ function configurarEventos() {
     document.getElementById('btn-conectar').addEventListener('click', () => {
         mostrarToast('La conexión de un dispositivo estará disponible próximamente.', 'info');
     });
+    document.getElementById('btn-jugar-minijuego').addEventListener('click', () => {
+        mostrarPantalla('minijuego');
+    });
+    document.getElementById('btn-iniciar-mg').addEventListener('click', iniciarMinijuego);
+    
     document.getElementById('form-planta').addEventListener('submit', async (evento) => {
         evento.preventDefault();
         const form = evento.currentTarget;
