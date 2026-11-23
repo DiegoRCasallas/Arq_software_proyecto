@@ -83,5 +83,11 @@ const API = (() => {
         getHistory(plantaId) {
             return request(`/plantas/${encodeURIComponent(plantaId)}/historial?limite=50`);
         },
+        playMinigame(plantaId, puntaje) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/minijuego`, {
+                method: 'POST',
+                body: JSON.stringify({ puntaje }),
+            });
+        },
     };
 })();
