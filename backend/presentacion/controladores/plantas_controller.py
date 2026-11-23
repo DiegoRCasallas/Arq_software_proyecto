@@ -184,3 +184,21 @@ def historial(planta_id):
         return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
     except Exception:
         return jsonify({"error": "ERROR_INTERNO", "mensaje": "Fallo al consultar el historial"}), 500
+
+
+@plantas_bp.route('/<int:planta_id>/minijuego', methods=['POST'])
+@requiere_jwt
+def registrar_minijuego(planta_id):
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict) or "puntaje" not in datos:
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "Se requiere el campo puntaje"}), 400
+
+    try:
+        resultado = contenedor_app.registrar_partida_minijuego_use_case.ejecutar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            puntaje=datos["puntaje"],
+        )
+        return jsonify(resultado), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
