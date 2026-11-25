@@ -28,7 +28,9 @@ class RepositorioPlantasSQL:
         )
 
     def obtener_por_dispositivo(self, dispositivo_id: str):
-        planta_db = PlantaModelo.query.filter_by(dispositivo_id=dispositivo_id).first()
+        planta_db = db.session.scalar(
+            db.select(PlantaModelo).where(PlantaModelo.dispositivo_id == dispositivo_id)
+        )
         return self._a_dominio(planta_db) if planta_db else None
 
     def obtener(self, planta_id: int):
@@ -36,7 +38,9 @@ class RepositorioPlantasSQL:
         return self._a_dominio(planta_db) if planta_db else None
 
     def listar_por_usuario(self, usuario_id: int):
-        plantas = PlantaModelo.query.filter_by(usuario_id=usuario_id).order_by(PlantaModelo.id).all()
+        plantas = db.session.scalars(
+            db.select(PlantaModelo).where(PlantaModelo.usuario_id == usuario_id).order_by(PlantaModelo.id)
+        ).all()
         return [self._a_dominio(planta) for planta in plantas]
 
     def guardar(self, planta):

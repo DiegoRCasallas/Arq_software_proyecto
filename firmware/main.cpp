@@ -12,11 +12,18 @@
 #include <Wire.h>
 
 // ---------- CONFIGURACION ----------
-// Cambia esta IP por la de tu PC (en Ubuntu: hostname -I) o tu URL de Railway
-static const char *API_BASE_URL = "http://172.20.10.2:5000";
+// URL del backend en Railway (HTTPS, funciona en cualquier red)
+static const char *API_BASE_URL = "https://arqsoftwareproyecto-production.up.railway.app";
 static const char *DEVICE_ID = "ESP32_TEST_001";
 static const char *DEVICE_TOKEN = "token_secreto_123";
 static const uint32_t INTERVALO_MS = 10000;
+
+// WiFi: botón de reset de credenciales
+// GPIO 0 = botón BOOT del ESP32-WROOM (ya viene en el board, sin cableado extra)
+// Mantén presionado al encender → borra la red guardada y abre el portal de config.
+#define PIN_RESET_WIFI 0
+#define RESET_HOLD_MS  3000   // tiempo que hay que mantenerlo (ms)
+#define PORTAL_TIMEOUT 180    // segundos que el portal estará abierto si no conecta
 
 // Pines (coinciden con tu montaje en protoboard)
 #define PIN_SDA 21
@@ -142,6 +149,36 @@ Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
   return r;
 }
 
+// Detecta si el botón BOOT se mantiene presionado al encender.
+// Retorna true si se sostuvo >= RESET_HOLD_MS ms.
+static bool botonResetPresionado() {
+  pinMode(PIN_RESET_WIFI, INPUT_PULLUP);
+  if (digitalRead(PIN_RESET_WIFI) != LOW)
+    return false; // no está presionado, salir rápido
+
+  // Está presionado: esperar el tiempo mínimo con feedback visual
+  uint32_t inicio = millis();
+  while (digitalRead(PIN_RESET_WIFI) == LOW) {
+    uint32_t transcurrido = millis() - inicio;
+    if (transcurrido >= RESET_HOLD_MS)
+      return true;
+    // Barra de progreso en OLED
+    int porcentaje = (transcurrido * 100) / RESET_HOLD_MS;
+    oled.clearDisplay();
+    oled.setTextSize(1);
+    oled.setTextColor(SSD1306_WHITE);
+    oled.setCursor(0, 0);
+    oled.print("Suelta para cancelar");
+    oled.setCursor(0, 16);
+    oled.print("Borrando WiFi...");
+    oled.drawRect(0, 40, 128, 12, SSD1306_WHITE);
+    oled.fillRect(2, 42, (124 * porcentaje) / 100, 8, SSD1306_WHITE);
+    oled.display();
+    delay(50);
+  }
+  return false; // soltó antes de tiempo
+}
+
 void setup() {
   Serial.begin(115200);
   Wire.begin(PIN_SDA, PIN_SCL);
@@ -154,12 +191,33 @@ void setup() {
   analogReadResolution(12);
   pinMode(PIN_LDR, INPUT);
 
-  pantalla("WiFi", "Conectando", "Si falla: Matera-Setup", "192.168.4.1");
   WiFiManager wm;
-  // autoConnect recuerda tu WiFi; solo abre el portal si no tiene red guardada
+
+  // --- Reset de credenciales WiFi ---
+  // Mantén el botón BOOT (GPIO 0) al encender 3 s para borrar la red guardada.
+  if (botonResetPresionado()) {
+    Serial.println("Reset WiFi: borrando credenciales guardadas");
+    wm.resetSettings();
+    pantalla("WiFi Reset", "Credenciales", "borradas", "Abriendo portal...");
+    delay(1500);
+  }
+
+  // --- Conexión WiFi con portal de respaldo ---
+  // Si hay red guardada → conecta directamente (sin abrir portal).
+  // Si no hay red ó falla en PORTAL_TIMEOUT s → abre "Matera-Setup" en 192.168.4.1
+  // y espera configuración. Si nadie configura en ese tiempo → reinicia.
+  wm.setConnectTimeout(30);            // tiempo máximo buscando la red guardada (s)
+  wm.setConfigPortalTimeout(PORTAL_TIMEOUT); // tiempo que el portal permanece abierto (s)
+  pantalla("WiFi", "Conectando...", "BOOT 3s = cambiar red", "192.168.4.1");
+
   if (!wm.autoConnect("Matera-Setup")) {
+    // Timeout del portal agotado → reiniciar e intentar de nuevo
+    Serial.println("Portal de config cerrado sin configurar. Reiniciando...");
+    pantalla("Sin WiFi", "Reiniciando", "en 3 s...");
+    delay(3000);
     ESP.restart();
   }
+
   pantalla("WiFi OK", WiFi.localIP().toString());
   delay(1500);
 }
