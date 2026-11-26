@@ -1155,3 +1155,12 @@ select:focus-visible {
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
     }
+    
+/* === Despejar barra inferior del aviso de Netlify === */
+.bottom-nav {
+    padding-bottom: 62px;
+}
+
+.app-shell {
+    padding-bottom: 145px;
+}
