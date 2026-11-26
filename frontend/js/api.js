@@ -89,14 +89,25 @@ const API = (() => {
                 body: JSON.stringify({ puntaje }),
             });
         },
-        linkDevice(plantaId, dispositivoId, token) {
+        linkDevice(plantaId, dispositivoId, codigoVinculacion) {
             return request(`/plantas/${encodeURIComponent(plantaId)}/dispositivo`, {
                 method: 'POST',
                 body: JSON.stringify({
                     dispositivo_id: dispositivoId,
-                    token,
+                    codigo_vinculacion: codigoVinculacion,
                 }),
             });
+        },
+        getDevicePairing(plantaId, sessionId) {
+            return request(
+                `/plantas/${encodeURIComponent(plantaId)}/dispositivo/vinculaciones/${encodeURIComponent(sessionId)}`
+            );
+        },
+        cancelDevicePairing(plantaId, sessionId) {
+            return request(
+                `/plantas/${encodeURIComponent(plantaId)}/dispositivo/vinculaciones/${encodeURIComponent(sessionId)}`,
+                { method: 'DELETE' }
+            );
         },
         unlinkDevice(plantaId) {
             return request(`/plantas/${encodeURIComponent(plantaId)}/dispositivo`, {
