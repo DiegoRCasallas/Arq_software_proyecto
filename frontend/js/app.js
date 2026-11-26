@@ -1,4 +1,4 @@
-const appState = {
+ const appState = {
     plantId: null,
     plant: null,
     plants: [],
@@ -274,7 +274,14 @@ async function cargarDetalles() {
             'Mantén un buen drenaje para evitar exceso de agua.',
         ];
         document.getElementById('cuidados-especie').innerHTML = cuidados.map((tip) => `<li>${escapeHTML(tip)}</li>`).join('');
-    } catch (error) {
+        const btnConectar = document.getElementById('btn-conectar');
+        if (btnConectar) {
+            btnConectar.textContent = planta.dispositivo_conectado
+                ? 'Gestionar dispositivo'
+                : 'Conectar dispositivo';
+        }
+    } 
+    catch (error) {
         perfil.className = 'inline-error';
         perfil.textContent = error.message;
     }
@@ -567,6 +574,34 @@ async function finalizarMinijuego() {
     }
 }
 
+async function cargarConectarDispositivo() {
+    if (!appState.plantId) {
+        mostrarPantalla('mis-plantas');
+        return;
+    }
+
+    const form = document.getElementById('form-conectar-dispositivo');
+    const btnDesvincular = document.getElementById('btn-desvincular-dispositivo');
+    const titulo = document.getElementById('conectar-estado-titulo');
+    const texto = document.getElementById('conectar-estado-texto');
+    limpiarErrorFormulario(form);
+    form.reset();
+
+    try {
+        const planta = await API.getPlant(appState.plantId);
+        appState.plant = planta;
+        const conectado = Boolean(planta.dispositivo_conectado);
+
+        titulo.textContent = conectado ? '● Dispositivo vinculado' : '○ Sin dispositivo vinculado';
+        texto.textContent = conectado
+            ? 'Esta planta ya tiene un ESP32 conectado. Puedes vincular uno nuevo para reemplazarlo o desvincular el actual.'
+            : 'Ingresa el ID y token configurados en tu ESP32 para empezar a recibir mediciones.';
+        btnDesvincular.hidden = !conectado;
+    } catch (error) {
+        mostrarToast(error.message, 'error');
+    }
+}
+
 function configurarEventos() {
     document.addEventListener('click', (evento) => {
         const navegacion = evento.target.closest('[data-screen]');
@@ -657,7 +692,38 @@ function configurarEventos() {
         mostrarPantalla('diagnostico');
     });
     document.getElementById('btn-conectar').addEventListener('click', () => {
-        mostrarToast('La conexión de un dispositivo estará disponible próximamente.', 'info');
+        mostrarPantalla('conectar');
+    });
+
+    document.getElementById('form-conectar-dispositivo').addEventListener('submit', async (evento) => {
+        evento.preventDefault();
+        const form = evento.currentTarget;
+        limpiarErrorFormulario(form);
+        const submit = form.querySelector('[type="submit"]');
+        submit.disabled = true;
+
+        try {
+            const dispositivoId = document.getElementById('input-dispositivo-id').value.trim();
+            const token = document.getElementById('input-dispositivo-token').value.trim();
+            await API.linkDevice(appState.plantId, dispositivoId, token);
+            mostrarToast('Dispositivo vinculado correctamente.', 'success');
+            mostrarPantalla('detalles');
+        } catch (error) {
+            mostrarErrorFormulario(form, error.message);
+        } finally {
+            submit.disabled = false;
+        }
+    });
+
+    document.getElementById('btn-desvincular-dispositivo').addEventListener('click', async () => {
+        if (!appState.plantId || !window.confirm('¿Desvincular el ESP32 de esta planta? Dejará de recibir mediciones.')) return;
+        try {
+            await API.unlinkDevice(appState.plantId);
+            mostrarToast('Dispositivo desvinculado.', 'success');
+            mostrarPantalla('detalles');
+        } catch (error) {
+            mostrarToast(error.message, 'error');
+        }
     });
     document.getElementById('btn-jugar-minijuego').addEventListener('click', () => {
         mostrarPantalla('minijuego');
