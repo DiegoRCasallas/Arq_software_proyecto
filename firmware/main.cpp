@@ -63,6 +63,7 @@ struct AcumuladorMediciones {
 static uint32_t inicioPeriodo = 0;
 static uint32_t ultimaMuestra = 0;
 static AcumuladorMediciones acumulador;
+static Respuesta ultimaRespuesta;
 
 static String abrev(const String &s) {
   if (s == "OPTIMO")
@@ -75,6 +76,7 @@ static String abrev(const String &s) {
 void pantalla(const String &linea1, const String &grande, const String &l3 = "",
               const String &l4 = "", const String &l5 = "") {
   oled.clearDisplay();
+  oled.setTextWrap(false);
   oled.setTextColor(SSD1306_WHITE);
   oled.setTextSize(1);
   oled.setCursor(0, 0);
@@ -90,6 +92,23 @@ void pantalla(const String &linea1, const String &grande, const String &l3 = "",
   oled.setCursor(0, 54);
   oled.print(l5);
   oled.display();
+}
+
+static void formatearLineasSensores(bool hayTemperatura, float temperatura,
+                                    bool hayHumedad, float humedad,
+                                    bool hayLuz, float luz,
+                                    const Respuesta &resp,
+                                    String &l3, String &l4, String &l5) {
+  bool ok = resp.http == 201;
+  l3 = hayTemperatura
+           ? "T " + String(temperatura, 1) + "C" + (ok ? " " + abrev(resp.t) : "")
+           : "T desconectado";
+  l4 = hayHumedad
+           ? "H " + String(humedad, 0) + "%" + (ok ? " " + abrev(resp.h) : "")
+           : "H desconectado";
+  l5 = hayLuz
+           ? "L " + String(luz, 0) + "lx" + (ok ? " " + abrev(resp.l) : "")
+           : "L desconectado";
 }
 
 float leerLuzLux(int &rawPromedio) {
@@ -244,18 +263,19 @@ void loop() {
   uint32_t ahora = millis();
 
   if (ahora - ultimaMuestra >= INTERVALO_MUESTREO_MS) {
-    ultimaMuestra = ahora;
-
     float temperatura = dht.readTemperature();
     float humedad = dht.readHumidity(); // DHT22 requiere al menos 2 s entre lecturas.
     int ldrRaw = 0;
     float luz = leerLuzLux(ldrRaw);
+    ultimaMuestra = millis();
 
-    if (!isnan(temperatura)) {
+    bool hayTemperatura = !isnan(temperatura);
+    bool hayHumedad = !isnan(humedad);
+    if (hayTemperatura) {
       acumulador.sumaTemperatura += temperatura;
       acumulador.muestrasTemperatura++;
     }
-    if (!isnan(humedad)) {
+    if (hayHumedad) {
       acumulador.sumaHumedad += humedad;
       acumulador.muestrasHumedad++;
     }
@@ -263,12 +283,32 @@ void loop() {
     acumulador.muestrasLuz++;
 
     Serial.printf("Muestra T=%s H=%s L=%.1f (raw=%d)\n",
-                  !isnan(temperatura) ? String(temperatura, 1).c_str() : "NC",
-                  !isnan(humedad) ? String(humedad, 1).c_str() : "NC",
+                  hayTemperatura ? String(temperatura, 1).c_str() : "NC",
+                  hayHumedad ? String(humedad, 1).c_str() : "NC",
                   luz, ldrRaw);
+
+    if (millis() - inicioPeriodo < INTERVALO_MS) {
+      String l3, l4, l5;
+      formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
+                              true, luz, ultimaRespuesta, l3, l4, l5);
+      String cab;
+      String grande;
+      if (ultimaRespuesta.http == 201) {
+        cab = "M" + String(acumulador.muestrasLuz) + " | HTTP 201";
+        grande = ultimaRespuesta.estado;
+      } else if (ultimaRespuesta.http != 0) {
+        cab = "M" + String(acumulador.muestrasLuz) + " | HTTP " +
+              String(ultimaRespuesta.http);
+        grande = "ERROR";
+      } else {
+        cab = "Muestra " + String(acumulador.muestrasLuz) + " (10s)";
+        grande = "MIDIENDO";
+      }
+      pantalla(cab, grande, l3, l4, l5);
+    }
   }
 
-  if (ahora - inicioPeriodo >= INTERVALO_MS) {
+  if (millis() - inicioPeriodo >= INTERVALO_MS) {
     bool hayTemperatura = acumulador.muestrasTemperatura > 0;
     bool hayHumedad = acumulador.muestrasHumedad > 0;
     bool hayLuz = acumulador.muestrasLuz > 0;
@@ -290,15 +330,20 @@ void loop() {
       pantalla("Sin WiFi", "Reconectando");
       WiFi.reconnect();
     } else if (hayTemperatura || hayHumedad || hayLuz) {
+      String l3, l4, l5;
+      formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
+                              hayLuz, luz, ultimaRespuesta, l3, l4, l5);
+      pantalla("Enviando (" + String(acumulador.muestrasLuz) + "m)",
+               "ENVIANDO", l3, l4, l5);
+
       Respuesta r = enviar(hayTemperatura, temperatura, hayHumedad, humedad,
                            hayLuz, luz);
+      ultimaRespuesta = r;
 
-      String l3 = hayTemperatura ? "T " + String(temperatura, 1) + "C " + abrev(r.t)
-                                 : "T desconectado";
-      String l4 = hayHumedad ? "H " + String(humedad, 0) + "% " + abrev(r.h)
-                             : "H desconectado";
-      String l5 = "L " + String(luz, 0) + "lx " + abrev(r.l);
-      String cab = "HTTP " + String(r.http);
+      formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
+                              hayLuz, luz, r, l3, l4, l5);
+      String cab = "HTTP " + String(r.http) + " (" +
+                   String(acumulador.muestrasLuz) + "m)";
 
       pantalla(cab, r.http == 201 ? r.estado : "ERROR", l3, l4,
                r.http == 201 ? l5 : r.estado);
