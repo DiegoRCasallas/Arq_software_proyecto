@@ -10,9 +10,11 @@
 #include <WiFiClientSecure.h>
 #include <WiFiManager.h>
 #include <Wire.h>
+#include <memory>
 
 // ---------- CONFIGURACION ----------
 // URL del backend en Railway (HTTPS, funciona en cualquier red)
+static const char *API_HOST = "arqsoftwareproyecto-production.up.railway.app";
 static const char *API_BASE_URL = "https://arqsoftwareproyecto-production.up.railway.app";
 static const char *DEVICE_ID = "ESP32_TEST_001";
 static const char *DEVICE_TOKEN = "token_secreto_123";
@@ -139,15 +141,17 @@ Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
 
   String url = String(API_BASE_URL) + "/api/v1/dispositivos/" + DEVICE_ID +
                "/mediciones";
+  std::unique_ptr<WiFiClient> plano;
+  std::unique_ptr<WiFiClientSecure> seguro;
   HTTPClient http;
-  WiFiClient plano;
-  WiFiClientSecure seguro;
   bool ok;
   if (url.startsWith("https")) {
-    seguro.setInsecure();
-    ok = http.begin(seguro, url);
+    seguro.reset(new WiFiClientSecure());
+    seguro->setInsecure();
+    ok = http.begin(*seguro, url);
   } else {
-    ok = http.begin(plano, url);
+    plano.reset(new WiFiClient());
+    ok = http.begin(*plano, url);
   }
   if (!ok) {
     r.estado = "URL_INVALIDA";
@@ -158,6 +162,7 @@ Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-Device-Token", DEVICE_TOKEN);
 
+  Serial.println("Enviando POST...");
   r.http = http.POST(cuerpo);
   if (r.http > 0) {
     String payload = http.getString();
@@ -175,8 +180,46 @@ Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
     Serial.printf("HTTP %d -> %s\n", r.http, payload.c_str());
   } else {
     r.estado = "SIN_CONEXION";
-    Serial.printf("Error HTTP: %s\n",
-                  HTTPClient::errorToString(r.http).c_str());
+    IPAddress ip;
+    bool dnsOk = WiFi.hostByName(API_HOST, ip);
+    bool ipValida = dnsOk && ip != IPAddress(0, 0, 0, 0);
+    Serial.printf("Error HTTP (%d): %s | heap=%lu | rssi=%d | dns=%s (%s)\n",
+                  r.http, HTTPClient::errorToString(r.http).c_str(),
+                  static_cast<unsigned long>(ESP.getFreeHeap()), WiFi.RSSI(),
+                  ipValida ? "OK" : "FAIL", ip.toString().c_str());
+    if (seguro) {
+      char errBuf[128] = {0};
+      int tlsErr = seguro->lastError(errBuf, sizeof(errBuf));
+      if (tlsErr != 0) {
+        Serial.printf("TLS error (%d): %s\n", tlsErr, errBuf);
+      }
+    }
+
+    if (ipValida) {
+      WiFiClient tcpProbe;
+      tcpProbe.setConnectionTimeout(5000);
+      bool tcpOk = tcpProbe.connect(ip, 443, 5000);
+      Serial.printf("Diagnostico TCP 443 a %s: %s\n", ip.toString().c_str(),
+                    tcpOk ? "OK" : "FALLO");
+      tcpProbe.stop();
+
+      if (tcpOk) {
+        WiFiClientSecure tlsProbe;
+        tlsProbe.setInsecure();
+        tlsProbe.setHandshakeTimeout(5);
+        bool tlsOk = tlsProbe.connect(API_HOST, 443, 5000);
+        if (tlsOk) {
+          Serial.println("Diagnostico TLS: OK");
+        } else {
+          char errBuf[128] = {0};
+          int tlsErr = tlsProbe.lastError(errBuf, sizeof(errBuf));
+          Serial.printf("Diagnostico TLS: FALLO (%d): %s\n", tlsErr, errBuf);
+        }
+        tlsProbe.stop();
+      }
+    } else {
+      Serial.println("Diagnostico TCP 443: OMITIDO (DNS sin IP valida)");
+    }
   }
   http.end();
   return r;
@@ -251,6 +294,7 @@ void setup() {
     ESP.restart();
   }
 
+  WiFi.setSleep(false);
   pantalla("WiFi OK", WiFi.localIP().toString());
   delay(1500);
 
@@ -330,23 +374,28 @@ void loop() {
       pantalla("Sin WiFi", "Reconectando");
       WiFi.reconnect();
     } else if (hayTemperatura || hayHumedad || hayLuz) {
-      String l3, l4, l5;
-      formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
-                              hayLuz, luz, ultimaRespuesta, l3, l4, l5);
-      pantalla("Enviando (" + String(acumulador.muestrasLuz) + "m)",
-               "ENVIANDO", l3, l4, l5);
+      {
+        String l3, l4, l5;
+        formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
+                                hayLuz, luz, ultimaRespuesta, l3, l4, l5);
+        pantalla("Enviando (" + String(acumulador.muestrasLuz) + "m)",
+                 "ENVIANDO", l3, l4, l5);
+      }
 
       Respuesta r = enviar(hayTemperatura, temperatura, hayHumedad, humedad,
                            hayLuz, luz);
       ultimaRespuesta = r;
 
-      formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
-                              hayLuz, luz, r, l3, l4, l5);
-      String cab = "HTTP " + String(r.http) + " (" +
-                   String(acumulador.muestrasLuz) + "m)";
+      {
+        String l3, l4, l5;
+        formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
+                                hayLuz, luz, r, l3, l4, l5);
+        String cab = "HTTP " + String(r.http) + " (" +
+                     String(acumulador.muestrasLuz) + "m)";
 
-      pantalla(cab, r.http == 201 ? r.estado : "ERROR", l3, l4,
-               r.http == 201 ? l5 : r.estado);
+        pantalla(cab, r.http == 201 ? r.estado : "ERROR", l3, l4,
+                 r.http == 201 ? l5 : r.estado);
+      }
     } else {
       pantalla("Error de sensores", "SIN DATOS");
     }
