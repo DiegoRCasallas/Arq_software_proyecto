@@ -466,32 +466,76 @@ function prepararMinijuego() {
     btn.textContent = 'Empezar partida';
 }
 
+function mostrarFeedbackMinijuego(tablero, xPorcentaje, yPx, puntos) {
+    const tag = document.createElement('span');
+    tag.className = `mg-feedback ${puntos >= 0 ? 'positivo' : 'negativo'}`;
+    tag.textContent = puntos >= 0 ? `+${puntos}` : `${puntos}`;
+    tag.style.left = `${xPorcentaje}%`;
+    tag.style.top = `${Math.max(12, yPx)}px`;
+    tablero.appendChild(tag);
+    window.setTimeout(() => tag.remove(), 550);
+}
+
 function crearElementoMinijuego() {
     if (!minigameState.activo) return;
     const tablero = document.getElementById('mg-tablero');
-    const opciones = [
-        { emoji: '💧', puntos: 10 },
-        { emoji: '☀️', puntos: 10 },
-        { emoji: '🐛', puntos: -15 },
-    ];
-    const item = opciones[Math.floor(Math.random() * opciones.length)];
 
+    // Probabilidades: 35% agua, 35% sol, 22% plaga, 8% abono brillante (+20 pts)
+    const r = Math.random();
+    let item;
+    if (r < 0.35) {
+        item = { emoji: '💧', puntos: 10, factorVelocidad: 1.0 };
+    } else if (r < 0.70) {
+        item = { emoji: '☀️', puntos: 10, factorVelocidad: 1.0 };
+    } else if (r < 0.92) {
+        item = { emoji: '🐛', puntos: -15, factorVelocidad: 0.9 };
+    } else {
+        item = { emoji: '✨', puntos: 20, factorVelocidad: 0.75 };
+    }
+
+    // Dificultad progresiva: conforme baja el tiempo, caen más rápido
+    const progreso = (20 - minigameState.tiempo) / 20; // de 0.0 a 1.0
+    const duracionBase = 1.35 - (progreso * 0.45);     // de 1.35s baja hasta 0.90s
+    const variacion = (Math.random() * 0.25) - 0.1;
+    const duracionSeg = Math.max(0.65, (duracionBase + variacion) * item.factorVelocidad);
+
+    const posX = 6 + Math.random() * 78;
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'mg-item';
     btn.textContent = item.emoji;
-    btn.style.left = `${8 + Math.random() * 76}%`;
+    btn.style.left = `${posX}%`;
+    btn.style.setProperty('--duracion', `${duracionSeg.toFixed(2)}s`);
 
     btn.addEventListener('pointerdown', (e) => {
         e.preventDefault();
         if (!minigameState.activo) return;
+        const rectTablero = tablero.getBoundingClientRect();
+        const rectBtn = btn.getBoundingClientRect();
         minigameState.puntaje = Math.max(0, minigameState.puntaje + item.puntos);
         document.getElementById('mg-puntaje').textContent = String(minigameState.puntaje);
+        mostrarFeedbackMinijuego(tablero, posX, rectBtn.top - rectTablero.top, item.puntos);
         btn.remove();
     });
 
     tablero.appendChild(btn);
-    window.setTimeout(() => btn.remove(), 2200);
+    window.setTimeout(() => btn.remove(), Math.ceil(duracionSeg * 1000) + 100);
+}
+
+function iniciarMinijuego() {
+    prepararMinijuego();
+    minigameState.activo = true;
+    minigameState.puntaje = 0;
+    minigameState.tiempo = 20;
+    document.getElementById('btn-iniciar-mg').disabled = true;
+
+    crearElementoMinijuego();
+    minigameState.intervaloSpawn = window.setInterval(crearElementoMinijuego, 360);
+    minigameState.intervaloTiempo = window.setInterval(() => {
+        minigameState.tiempo -= 1;
+        document.getElementById('mg-tiempo').textContent = String(minigameState.tiempo);
+        if (minigameState.tiempo <= 0) finalizarMinijuego();
+    }, 1000);
 }
 
 async function finalizarMinijuego() {
@@ -518,21 +562,6 @@ async function finalizarMinijuego() {
         btn.disabled = false;
         btn.textContent = 'Jugar de nuevo';
     }
-}
-
-function iniciarMinijuego() {
-    prepararMinijuego();
-    minigameState.activo = true;
-    minigameState.puntaje = 0;
-    minigameState.tiempo = 20;
-    document.getElementById('btn-iniciar-mg').disabled = true;
-
-    minigameState.intervaloSpawn = window.setInterval(crearElementoMinijuego, 550);
-    minigameState.intervaloTiempo = window.setInterval(() => {
-        minigameState.tiempo -= 1;
-        document.getElementById('mg-tiempo').textContent = String(minigameState.tiempo);
-        if (minigameState.tiempo <= 0) finalizarMinijuego();
-    }, 1000);
 }
 
 function configurarEventos() {
