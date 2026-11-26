@@ -7,6 +7,7 @@ from infraestructura.config.contenedor import contenedor_app
 from presentacion.dto.manejador_errores import manejar_error_dominio
 from presentacion.dto.serializadores import serializar_diagnostico
 from presentacion.dto.validadores_request import construir_medicion
+from presentacion.ws.mediciones import emitir_medicion
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,20 @@ def registrar_medicion_endpoint(dispositivo_id):
             dispositivo_id, token_dispositivo, medicion
         )
 
-        # 4. Dominio -> JSON
+        # 4. Notificar en vivo después de persistir la medición.
+        planta = contenedor_app.repo_plantas.obtener_por_dispositivo(dispositivo_id)
+        if planta is not None:
+            emitir_medicion(planta.usuario_id, {
+                "tipo": "medicion",
+                "planta_id": planta.id,
+                "medicion": {
+                    "fecha": medicion.fecha.isoformat(),
+                    "valores": medicion.valores,
+                    **serializar_diagnostico(diagnostico),
+                },
+            })
+
+        # 5. Dominio -> JSON
         return jsonify(serializar_diagnostico(diagnostico)), 201
 
     except ErrorDominio as e:

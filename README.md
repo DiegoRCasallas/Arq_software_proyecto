@@ -88,9 +88,14 @@ Abre el archivo `frontend/index.html` en tu navegador o usa Live Server en VS Co
 | POST | `/api/v1/dispositivos/<id>/mediciones` | Token de dispositivo | Endpoint para el ESP32. Registra lecturas de sensores (ver contrato abajo). |
 | GET | `/api/v1/plantas/<id>/historial` | Sí | Devuelve el historial de diagnósticos de una planta. |
 | GET | `/api/v1/especies` | No | Lista las especies soportadas y sus rangos de referencia. |
+| WebSocket | `/api/v1/ws/mediciones` | Sí (JWT) | Envía en vivo las mediciones aceptadas de las plantas del usuario. |
 | GET | `/health` | No | Verificación de disponibilidad del servicio. |
 
-El frontend web es mobile-first e incluye bienvenida, registro/inicio de sesión, colección y detalle de plantas, historial y diagnóstico de la última medición. La pantalla de conexión del ESP32 y recuperación de contraseña se mantienen como funciones próximamente disponibles. Al eliminar una planta también se eliminan sus mediciones.
+El frontend web es mobile-first e incluye bienvenida, registro/inicio de sesión, colección y detalle de plantas, historial y diagnóstico de la última medición. Al llegar una medición aceptada, la colección, el detalle, el historial y el diagnóstico se actualizan sin recargar la página. La pantalla de conexión del ESP32 y recuperación de contraseña se mantienen como funciones próximamente disponibles. Al eliminar una planta también se eliminan sus mediciones.
+
+### Actualizaciones en vivo
+
+El navegador abre `ws://<servidor>/api/v1/ws/mediciones` (o `wss://` en HTTPS) y envía el JWT en el primer mensaje JSON, por ejemplo `{"token":"<JWT>"}`. Tras autenticarlo, el servidor solo envía al usuario propietario los eventos `{"tipo":"medicion","planta_id":1,"medicion":{...}}` correspondientes a mediciones que ya fueron guardadas. El cliente reconecta automáticamente si se interrumpe la conexión. Gunicorn se configura con 100 hilos para mantener conexiones WebSocket; el gestor de conexiones es local al proceso, por lo que la configuración actual debe ejecutarse con un solo worker.
 
 ### Contrato de `POST /api/v1/dispositivos/<id>/mediciones`
 

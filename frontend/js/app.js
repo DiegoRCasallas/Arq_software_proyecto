@@ -5,6 +5,10 @@ const appState = {
     toastTimer: null,
 };
 
+let medicionesSocket = null;
+let socketReintento = null;
+let socketHeartbeat = null;
+
 const PARAMETER_LABELS = {
     temperatura: 'Temperatura',
     humedad: 'Humedad del suelo (agua)',
@@ -219,6 +223,14 @@ function renderRecomendaciones(contenedor, medicion) {
     }
 }
 
+function renderUltimaMedicion(medicion) {
+    renderMediciones(document.getElementById('estado-actual'), medicion);
+    renderRecomendaciones(document.getElementById('recomendaciones-actuales'), medicion);
+    document.getElementById('fecha-medicion').textContent = medicion
+        ? new Date(medicion.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+        : 'Sin datos';
+}
+
 async function cargarDetalles() {
     const perfil = document.getElementById('detalle-planta');
     if (!appState.plantId) {
@@ -262,11 +274,7 @@ async function cargarDetalles() {
             </div>`;
 
         const ultima = planta.ultima_medicion;
-        renderMediciones(document.getElementById('estado-actual'), ultima);
-        renderRecomendaciones(document.getElementById('recomendaciones-actuales'), ultima);
-        document.getElementById('fecha-medicion').textContent = ultima
-            ? new Date(ultima.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
-            : 'Sin datos';
+        renderUltimaMedicion(ultima);
         const claveEspecie = (planta.especie || '').trim().toLowerCase();
         const cuidados = CARE_TIPS[claveEspecie] || [
             'Revisa la humedad del sustrato antes de regar.',
@@ -398,6 +406,89 @@ async function cargarDiagnostico() {
     } catch (error) {
         contenedor.innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`;
     }
+}
+
+function manejarMedicionEnVivo(evento) {
+    if (!evento || evento.tipo !== 'medicion' || !evento.medicion) return;
+
+    const plantaId = String(evento.planta_id);
+    const pantalla = document.querySelector('.pantalla.activa')?.id.replace('pantalla-', '');
+    if (pantalla === 'mis-plantas') cargarPlantas();
+
+    if (String(appState.plantId) !== plantaId) return;
+    if (appState.plant) appState.plant.ultima_medicion = evento.medicion;
+
+    if (pantalla === 'detalles') renderUltimaMedicion(evento.medicion);
+    if (pantalla === 'historial') cargarHistorial();
+    if (pantalla === 'diagnostico') cargarDiagnostico();
+}
+
+function desconectarMedicionesEnVivo() {
+    window.clearTimeout(socketReintento);
+    window.clearInterval(socketHeartbeat);
+    socketReintento = null;
+    socketHeartbeat = null;
+    if (medicionesSocket) {
+        medicionesSocket.close();
+        medicionesSocket = null;
+    }
+}
+
+function conectarMedicionesEnVivo() {
+    if (!API.getToken() || typeof WebSocket === 'undefined') return;
+    if (medicionesSocket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(medicionesSocket.readyState)) return;
+
+    const url = new URL('/api/v1/ws/mediciones', CONFIG.API_BASE_URL);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(url);
+    medicionesSocket = socket;
+
+    socket.addEventListener('open', () => {
+        const token = API.getToken();
+        if (!token) {
+            socket.close();
+            return;
+        }
+        socket.send(JSON.stringify({ token }));
+    });
+
+    socket.addEventListener('message', (mensaje) => {
+        let evento;
+        try {
+            evento = JSON.parse(mensaje.data);
+        } catch (error) {
+            console.error('El servidor envió un mensaje WebSocket inválido.', error);
+            socket.close(1002, 'Mensaje inválido');
+            return;
+        }
+
+        if (evento.tipo === 'autenticado') {
+            socketHeartbeat = window.setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) socket.send('ping');
+            }, 15000);
+        } else if (evento.tipo === 'medicion') {
+            manejarMedicionEnVivo(evento);
+        } else if (evento.tipo === 'error') {
+            API.logout();
+            window.dispatchEvent(new Event('sessionexpired'));
+        }
+    });
+
+    socket.addEventListener('close', (evento) => {
+        window.clearInterval(socketHeartbeat);
+        socketHeartbeat = null;
+        if (medicionesSocket === socket) medicionesSocket = null;
+        if (evento.code === 1008 && API.getToken()) {
+            API.logout();
+            window.dispatchEvent(new Event('sessionexpired'));
+            return;
+        }
+        if (API.getToken()) {
+            socketReintento = window.setTimeout(conectarMedicionesEnVivo, 3000);
+        }
+    });
+
+    socket.addEventListener('error', () => socket.close());
 }
 
 async function cargarEspecies() {
@@ -591,6 +682,7 @@ function configurarEventos() {
         submit.disabled = true;
         try {
             await API.login(document.getElementById('email').value.trim(), document.getElementById('password').value);
+            conectarMedicionesEnVivo();
             mostrarPantalla('mis-plantas');
         } catch (error) {
             mostrarErrorFormulario(form, error.message);
@@ -689,6 +781,7 @@ function configurarEventos() {
     });
     document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
         API.logout();
+        desconectarMedicionesEnVivo();
         appState.plantId = null;
         appState.plant = null;
         mostrarPantalla('bienvenida');
@@ -701,6 +794,7 @@ function configurarEventos() {
         }
     });
     window.addEventListener('sessionexpired', () => {
+        desconectarMedicionesEnVivo();
         appState.plantId = null;
         appState.plant = null;
         mostrarPantalla('bienvenida');
@@ -711,6 +805,7 @@ function configurarEventos() {
 document.addEventListener('DOMContentLoaded', () => {
     configurarEventos();
     if (API.getToken()) {
+        conectarMedicionesEnVivo();
         const guardada = localStorage.getItem('pantalla_actual');
         mostrarPantalla(guardada && !['bienvenida', 'login', 'registro'].includes(guardada) ? guardada : 'mis-plantas');
     } else {

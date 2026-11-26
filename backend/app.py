@@ -8,6 +8,7 @@ from infraestructura.config.contenedor import contenedor_app
 from presentacion.controladores.usuarios_controller import usuarios_bp
 from presentacion.controladores.plantas_controller import plantas_bp
 from presentacion.controladores.especies_controller import crear_especies_blueprint
+from presentacion.ws.mediciones import registrar_websocket
 
 def _asegurar_columnas_plantas(db_instance):
     """Agrega columnas nuevas a 'plantas' si la tabla ya existía sin ellas."""
@@ -66,6 +67,7 @@ def crear_app():
         crear_especies_blueprint(contenedor_app.listar_especies_use_case),
         url_prefix="/api/v1",
     )
+    registrar_websocket(app)
 
     @app.get("/health")
     def health():
