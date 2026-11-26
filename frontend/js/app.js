@@ -127,6 +127,8 @@ function mostrarPantalla(idActiva) {
         item.classList.toggle('active', item.dataset.screen === idActiva);
     });
 
+    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar'].includes(idActiva);
+
     localStorage.setItem('pantalla_actual', idActiva);
     if (idActiva !== 'minijuego') detenerMinijuego();
     if (idActiva === 'mis-plantas') cargarPlantas();
