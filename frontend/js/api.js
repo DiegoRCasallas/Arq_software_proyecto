@@ -89,5 +89,19 @@ const API = (() => {
                 body: JSON.stringify({ puntaje }),
             });
         },
+        linkDevice(plantaId, dispositivoId, token) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/dispositivo`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    dispositivo_id: dispositivoId,
+                    token,
+                }),
+            });
+        },
+        unlinkDevice(plantaId) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/dispositivo`, {
+                method: 'DELETE',
+            });
+        },  
     };
 })();
