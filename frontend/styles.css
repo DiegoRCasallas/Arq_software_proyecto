@@ -993,6 +993,7 @@ select:focus-visible {
     body {
         padding: 24px 0;
     }
+}
 
     .app-shell {
         min-height: calc(100vh - 48px);
@@ -1154,4 +1155,3 @@ select:focus-visible {
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
     }
-}
