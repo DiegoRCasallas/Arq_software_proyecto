@@ -162,6 +162,28 @@
             <button id="btn-iniciar-mg" class="btn btn-primary" type="button">Empezar partida</button>
         </section>
 
+        <section id="pantalla-conectar" class="pantalla app-screen">
+            <header class="subpage-header">
+                <button class="back-button" type="button" data-screen="detalles" aria-label="Volver al detalle">←</button>
+                <h1>Conectar dispositivo</h1>
+                <span class="header-spacer" aria-hidden="true"></span>
+            </header>
+            <section class="content-card">
+                <p class="eyebrow">ESTADO DE LA MATERA</p>
+                <h2 id="conectar-estado-titulo">Sin dispositivo vinculado</h2>
+                <p id="conectar-estado-texto" class="muted">Ingresa el ID y token configurados en tu ESP32 para empezar a recibir mediciones.</p>
+            </section>
+            <form id="form-conectar-dispositivo" class="form-card">
+                <label for="input-dispositivo-id">ID del dispositivo</label>
+                <input id="input-dispositivo-id" name="dispositivo_id" placeholder="Ej. ESP32_TEST_001" required>
+                <label for="input-dispositivo-token">Token del dispositivo</label>
+                <input id="input-dispositivo-token" name="token" type="password" placeholder="Token configurado en el ESP32" required>
+                <p class="helper-text">Debe coincidir exactamente con <code>DEVICE_ID</code> y <code>DEVICE_TOKEN</code> en tu firmware.</p>
+                <button class="btn btn-primary form-submit" type="submit">Vincular dispositivo</button>
+            </form>
+            <button id="btn-desvincular-dispositivo" class="btn btn-danger" type="button" hidden>Desvincular dispositivo</button>
+        </section>
+
         <section id="pantalla-add-planta" class="pantalla app-screen">
             <header class="subpage-header">
                 <button class="back-button" type="button" data-screen="mis-plantas" aria-label="Volver a mis plantas">←</button>
