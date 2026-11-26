@@ -138,6 +138,7 @@ function mostrarPantalla(idActiva) {
     if (idActiva === 'minijuego') prepararMinijuego();
     if (idActiva === 'add-planta') cargarEspecies();
     if (idActiva === 'ajustes') cargarAjustes();
+    if (idActiva === 'conectar') cargarConectarDispositivo();
 }
 
 function renderVacio(contenedor, titulo, mensaje, accion = '') {
