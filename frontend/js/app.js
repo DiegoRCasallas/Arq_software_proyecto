@@ -120,14 +120,12 @@ function mostrarPantalla(idActiva) {
 
     const nav = document.getElementById('menu-inferior');
     const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
-    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego'].includes(idActiva);
+    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar'].includes(idActiva);
     nav.hidden = !navVisible;
     document.body.classList.toggle('diagnosis-active', idActiva === 'diagnostico');
     document.querySelectorAll('.nav-item').forEach((item) => {
         item.classList.toggle('active', item.dataset.screen === idActiva);
     });
-
-    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar'].includes(idActiva);
 
     localStorage.setItem('pantalla_actual', idActiva);
     if (idActiva !== 'minijuego') detenerMinijuego();
