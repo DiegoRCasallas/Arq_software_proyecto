@@ -798,6 +798,12 @@ function configurarEventos() {
             await API.linkDevice(appState.plantId, dispositivoId, token);
             mostrarToast('Dispositivo vinculado correctamente.', 'success');
             mostrarPantalla('detalles');
+            const res = await API.linkDevice(appState.plantId, dispositivoId, token);
+            const msg = res.reasignado_desde_planta_id
+                ? 'Dispositivo movido desde tu otra planta y vinculado aquí.'
+                : 'Dispositivo vinculado correctamente.';
+            mostrarToast(msg, 'success');
+            mostrarPantalla('detalles');
         } catch (error) {
             mostrarErrorFormulario(form, error.message);
         } finally {
