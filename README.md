@@ -57,6 +57,8 @@ python3 app.py
 ```
 *El servidor quedará disponible en `http://localhost:5000`.*
 
+El firmware de [firmware/main.cpp](./firmware/main.cpp) toma lecturas aproximadamente cada 2 segundos y envía al backend el promedio de las lecturas válidas acumuladas durante cada ventana de 10 segundos. Si una lectura del DHT22 falla, se excluye del promedio de ese sensor; temperatura y humedad se promedian usando sus propias muestras válidas.
+
 ### 2. Iniciar el Hardware Simulado
 En la **Terminal 2**, ejecuta el simulador que representa a la matera enviando mediciones de temperatura, humedad y luz:
 ```bash

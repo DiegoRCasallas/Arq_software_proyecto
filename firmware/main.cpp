@@ -17,6 +17,7 @@ static const char *API_BASE_URL = "https://arqsoftwareproyecto-production.up.rai
 static const char *DEVICE_ID = "ESP32_TEST_001";
 static const char *DEVICE_TOKEN = "token_secreto_123";
 static const uint32_t INTERVALO_MS = 10000;
+static const uint32_t INTERVALO_MUESTREO_MS = 2000;
 
 // WiFi: botón de reset de credenciales
 // GPIO 0 = botón BOOT del ESP32-WROOM (ya viene en el board, sin cableado extra)
@@ -49,6 +50,19 @@ struct Respuesta {
   String estado;  // estado_general o codigo de error
   String t, h, l; // BAJO / OPTIMO / ALTO / REPOSO_NOCTURNO
 };
+
+struct AcumuladorMediciones {
+  float sumaTemperatura = 0;
+  float sumaHumedad = 0;
+  float sumaLuz = 0;
+  uint16_t muestrasTemperatura = 0;
+  uint16_t muestrasHumedad = 0;
+  uint16_t muestrasLuz = 0;
+};
+
+static uint32_t inicioPeriodo = 0;
+static uint32_t ultimaMuestra = 0;
+static AcumuladorMediciones acumulador;
 
 static String abrev(const String &s) {
   if (s == "OPTIMO")
@@ -220,48 +234,82 @@ void setup() {
 
   pantalla("WiFi OK", WiFi.localIP().toString());
   delay(1500);
+
+  uint32_t ahora = millis();
+  inicioPeriodo = ahora;
+  ultimaMuestra = ahora - INTERVALO_MUESTREO_MS;
 }
 
 void loop() {
-  static uint32_t ultimo = 0;
-  if (millis() - ultimo < INTERVALO_MS && ultimo != 0)
-    return;
-  ultimo = millis();
+  uint32_t ahora = millis();
 
-  if (WiFi.status() != WL_CONNECTED) {
-    pantalla("Sin WiFi", "Reconectando");
-    WiFi.reconnect();
-    return;
+  if (ahora - ultimaMuestra >= INTERVALO_MUESTREO_MS) {
+    ultimaMuestra = ahora;
+
+    float temperatura = dht.readTemperature();
+    float humedad = dht.readHumidity(); // DHT22 requiere al menos 2 s entre lecturas.
+    int ldrRaw = 0;
+    float luz = leerLuzLux(ldrRaw);
+
+    if (!isnan(temperatura)) {
+      acumulador.sumaTemperatura += temperatura;
+      acumulador.muestrasTemperatura++;
+    }
+    if (!isnan(humedad)) {
+      acumulador.sumaHumedad += humedad;
+      acumulador.muestrasHumedad++;
+    }
+    acumulador.sumaLuz += luz;
+    acumulador.muestrasLuz++;
+
+    Serial.printf("Muestra T=%s H=%s L=%.1f (raw=%d)\n",
+                  !isnan(temperatura) ? String(temperatura, 1).c_str() : "NC",
+                  !isnan(humedad) ? String(humedad, 1).c_str() : "NC",
+                  luz, ldrRaw);
   }
 
-  float t = dht.readTemperature();
-  float h = dht.readHumidity(); // Usando DHT22 mientras se integra sensor de suelo
-  bool hayTemperatura = !isnan(t);
-  bool hayHumedad = !isnan(h);
+  if (ahora - inicioPeriodo >= INTERVALO_MS) {
+    bool hayTemperatura = acumulador.muestrasTemperatura > 0;
+    bool hayHumedad = acumulador.muestrasHumedad > 0;
+    bool hayLuz = acumulador.muestrasLuz > 0;
+    float temperatura = hayTemperatura
+                            ? acumulador.sumaTemperatura /
+                                  acumulador.muestrasTemperatura
+                            : 0;
+    float humedad = hayHumedad
+                        ? acumulador.sumaHumedad / acumulador.muestrasHumedad
+                        : 0;
+    float luz = hayLuz ? acumulador.sumaLuz / acumulador.muestrasLuz : 0;
 
-  int ldrRaw = 0;
-  float lux = leerLuzLux(ldrRaw);
-  bool hayLuz = true;
+    Serial.printf("Promedio de %u muestras: T=%s H=%s L=%.1f\n",
+                  acumulador.muestrasLuz,
+                  hayTemperatura ? String(temperatura, 1).c_str() : "NC",
+                  hayHumedad ? String(humedad, 1).c_str() : "NC", luz);
 
-  if (!hayTemperatura && !hayHumedad && !hayLuz) {
-    pantalla("Error de sensores", "SIN DATOS");
-    return;
+    if (WiFi.status() != WL_CONNECTED) {
+      pantalla("Sin WiFi", "Reconectando");
+      WiFi.reconnect();
+    } else if (hayTemperatura || hayHumedad || hayLuz) {
+      Respuesta r = enviar(hayTemperatura, temperatura, hayHumedad, humedad,
+                           hayLuz, luz);
+
+      String l3 = hayTemperatura ? "T " + String(temperatura, 1) + "C " + abrev(r.t)
+                                 : "T desconectado";
+      String l4 = hayHumedad ? "H " + String(humedad, 0) + "% " + abrev(r.h)
+                             : "H desconectado";
+      String l5 = "L " + String(luz, 0) + "lx " + abrev(r.l);
+      String cab = "HTTP " + String(r.http);
+
+      pantalla(cab, r.http == 201 ? r.estado : "ERROR", l3, l4,
+               r.http == 201 ? l5 : r.estado);
+    } else {
+      pantalla("Error de sensores", "SIN DATOS");
+    }
+
+    acumulador = {};
+    inicioPeriodo = millis();
+    ultimaMuestra = inicioPeriodo;
   }
 
-  Serial.printf("T=%s H=%s L=%.0f (raw=%d)\n",
-                hayTemperatura ? String(t, 1).c_str() : "NC",
-                hayHumedad ? String(h, 1).c_str() : "NC",
-                lux, ldrRaw);
-
-  Respuesta r = enviar(hayTemperatura, t, hayHumedad, h, hayLuz, lux);
-
-  String l3 = hayTemperatura ? "T " + String(t, 1) + "C " + abrev(r.t)
-                             : "T desconectado";
-  String l4 = hayHumedad ? "H " + String(h, 0) + "% " + abrev(r.h)
-                         : "H desconectado";
-  String l5 = "L " + String(lux, 0) + "lx " + abrev(r.l);
-  String cab = "HTTP " + String(r.http);
-
-  pantalla(cab, r.http == 201 ? r.estado : "ERROR", l3, l4,
-           r.http == 201 ? l5 : r.estado);
+  delay(10);
 }
