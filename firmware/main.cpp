@@ -119,13 +119,13 @@ static void pantalla(const String &linea1, const String &grande,
                      const String &l5 = String());
 
 static String generarHexAleatorio(size_t cantidadBytes) {
-  static const char HEX[] = "0123456789abcdef";
+  static const char DIGITOS_HEX[] = "0123456789abcdef";
   String resultado;
   resultado.reserve(cantidadBytes * 2);
   for (size_t i = 0; i < cantidadBytes; ++i) {
     uint8_t valor = static_cast<uint8_t>(esp_random());
-    resultado += HEX[valor >> 4];
-    resultado += HEX[valor & 0x0F];
+    resultado += DIGITOS_HEX[valor >> 4];
+    resultado += DIGITOS_HEX[valor & 0x0F];
   }
   return resultado;
 }
@@ -461,29 +461,11 @@ Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
   String cuerpo;
   serializeJson(doc, cuerpo);
 
-<<<<<<< HEAD
   String url = String(API_BASE_URL) + "/api/v1/dispositivos/" +
                dispositivoId + "/mediciones";
   HTTPClient http;
   WiFiClientSecure seguro;
   if (!abrirHttpSeguro(http, seguro, url)) {
-=======
-  String url = String(API_BASE_URL) + "/api/v1/dispositivos/" + DEVICE_ID +
-               "/mediciones";
-  std::unique_ptr<WiFiClient> plano;
-  std::unique_ptr<WiFiClientSecure> seguro;
-  HTTPClient http;
-  bool ok;
-  if (url.startsWith("https")) {
-    seguro.reset(new WiFiClientSecure());
-    seguro->setInsecure();
-    ok = http.begin(*seguro, url);
-  } else {
-    plano.reset(new WiFiClient());
-    ok = http.begin(*plano, url);
-  }
-  if (!ok) {
->>>>>>> a1d91d4cc4e18e51e4c15bd2cf241a9d6513bf62
     r.estado = "URL_INVALIDA";
     return r;
   }
@@ -517,12 +499,10 @@ Respuesta enviar(bool hayTemperatura, float temperatura, bool hayHumedad,
                   r.http, HTTPClient::errorToString(r.http).c_str(),
                   static_cast<unsigned long>(ESP.getFreeHeap()), WiFi.RSSI(),
                   ipValida ? "OK" : "FAIL", ip.toString().c_str());
-    if (seguro) {
-      char errBuf[128] = {0};
-      int tlsErr = seguro->lastError(errBuf, sizeof(errBuf));
-      if (tlsErr != 0) {
-        Serial.printf("TLS error (%d): %s\n", tlsErr, errBuf);
-      }
+    char errBuf[128] = {0};
+    int tlsErr = seguro.lastError(errBuf, sizeof(errBuf));
+    if (tlsErr != 0) {
+      Serial.printf("TLS error (%d): %s\n", tlsErr, errBuf);
     }
 
     if (ipValida) {
@@ -624,11 +604,8 @@ void setup() {
     ESP.restart();
   }
 
-<<<<<<< HEAD
   cargarCredencialesDispositivo();
-=======
   WiFi.setSleep(false);
->>>>>>> a1d91d4cc4e18e51e4c15bd2cf241a9d6513bf62
   pantalla("WiFi OK", WiFi.localIP().toString());
   delay(1500);
   if (!dispositivoVinculado) {
