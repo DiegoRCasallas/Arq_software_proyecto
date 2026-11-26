@@ -1,9 +1,10 @@
+import re
 from flask import Blueprint, jsonify, request, g
 from presentacion.seguridad.autenticacion import requiere_jwt
 from infraestructura.config.contenedor import contenedor_app
 from dominio.excepciones.errores_dominio import ErrorDominio
 
-plantas_bp = Blueprint('plantas', __name__, url_prefix='/api/v1/plantas')
+plantas_bp = Blueprint("plantas", __name__, url_prefix="/api/v1/plantas")
 
 
 def _serializar_planta(planta, historial=None):
@@ -110,36 +111,59 @@ def eliminar_planta(planta_id):
 @requiere_jwt
 def vincular_dispositivo(planta_id):
     """
-    Recibe los datos escaneados del QR del ESP32 y los vincula a la planta.
-
-    Body esperado (JSON extraído del QR):
-      { "dispositivo_id": "<hash_mac_esp32>", "token": "<token_plano_esp32>" }
-
-    El ESP32 muestra el QR en su pantalla; el usuario lo escanea desde la app.
-    El token se guarda hasheado; nunca se persiste en texto plano.
+    Reclama para esta planta una sesión preparada por el ESP32. El dispositivo
+    requiere una aprobación física antes de completar la vinculación.
     """
     datos = request.get_json(silent=True)
     if not isinstance(datos, dict):
         return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "Se esperaba un objeto JSON"}), 400
 
     dispositivo_id = datos.get("dispositivo_id")
-    token = datos.get("token")
+    codigo = datos.get("codigo_vinculacion")
 
-    if not dispositivo_id or not isinstance(dispositivo_id, str) or not dispositivo_id.strip():
-        return jsonify({"error": "DATOS_INCOMPLETOS", "mensaje": "dispositivo_id es obligatorio"}), 400
-    if not token or not isinstance(token, str) or not token.strip():
-        return jsonify({"error": "DATOS_INCOMPLETOS", "mensaje": "token es obligatorio"}), 400
+    if not isinstance(dispositivo_id, str) or not re.fullmatch(r"[a-fA-F0-9]{24}", dispositivo_id):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "El ID del dispositivo no es válido"}), 400
+    if not isinstance(codigo, str) or not re.fullmatch(r"[a-fA-F0-9]{32}", codigo):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "El código QR no es válido"}), 400
 
     try:
-        resultado = contenedor_app.vincular_dispositivo_use_case.ejecutar(
+        resultado = contenedor_app.vinculacion_qr_use_case.solicitar(
             usuario_id=g.usuario_id,
             planta_id=planta_id,
-            dispositivo_id=dispositivo_id.strip(),
-            token_plano=token.strip(),
+            dispositivo_id=dispositivo_id.lower(),
+            codigo=codigo.lower(),
         )
-        return jsonify({"mensaje": "Dispositivo vinculado correctamente", **resultado}), 200
+        return jsonify(resultado), 202
     except ErrorDominio as e:
         return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
+
+
+@plantas_bp.route('/<int:planta_id>/dispositivo/vinculaciones/<string:sesion_id>', methods=['GET'])
+@requiere_jwt
+def consultar_vinculacion_dispositivo(planta_id, sesion_id):
+    try:
+        resultado = contenedor_app.vinculacion_qr_use_case.consultar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            sesion_id=sesion_id,
+        )
+        return jsonify(resultado), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 404
+
+
+@plantas_bp.route('/<int:planta_id>/dispositivo/vinculaciones/<string:sesion_id>', methods=['DELETE'])
+@requiere_jwt
+def cancelar_vinculacion_dispositivo(planta_id, sesion_id):
+    try:
+        contenedor_app.vinculacion_qr_use_case.cancelar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            sesion_id=sesion_id,
+        )
+        return jsonify({"estado": "cancelada"}), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 404
 
 
 @plantas_bp.route('/<int:planta_id>/dispositivo', methods=['DELETE'])

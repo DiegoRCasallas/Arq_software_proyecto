@@ -68,7 +68,7 @@ python3 simulador_esp32.py
 *Envía una medición cada 5 segundos. La mayoría son normales (`201`, SALUDABLE); el simulador mezcla a propósito casos anómalos (`201`, CRITICO), lecturas defectuosas como texto o `null` (`400 VALOR_NO_NUMERICO`) y valores físicamente imposibles (`400 VALOR_FUERA_DE_RANGO_FISICO`), para que veas cómo reacciona el backend.*
 
 ### 3. Ejecutar el Frontend
-Abre el archivo `frontend/index.html` en tu navegador o usa Live Server en VS Code. El cliente usa `http://localhost:5000` al ejecutarse localmente y la URL de Railway en otros dominios. Para agregar una especie nueva, registra su perfil en la tabla de referencia.
+Sirve `frontend/index.html` con Live Server en VS Code para que el navegador permita usar la cámara desde `localhost`. El cliente usa `http://localhost:5000` al ejecutarse localmente y la URL de Railway en otros dominios. Para agregar una especie nueva, registra su perfil en la tabla de referencia.
 * *Nota:* Si utilizas la extensión "Live Server" de VS Code, asegúrate de configurar `.vscode/settings.json` para ignorar los cambios en `*.db`, de lo contrario, la página se recargará cada 5 segundos cuando el simulador guarde datos.
 
 > **¿Ya tenías una base de datos de una versión anterior?** Vuelve a ejecutar `python3 seed.py`: no duplica nada, solo sincroniza los rangos de la especie "Cinta" con los límites físicos actuales (antes eran límites de tolerancia y rechazarían lecturas anómalas legítimas). Como alternativa, borra `backend/instance/matera.db` y siembra de nuevo.
@@ -87,13 +87,25 @@ Abre el archivo `frontend/index.html` en tu navegador o usa Live Server en VS Co
 | POST | `/api/v1/plantas` | Sí | Crea una planta asociada a una especie soportada. |
 | GET | `/api/v1/plantas/<id>` | Sí | Consulta el detalle de una planta propia y su última lectura. |
 | DELETE | `/api/v1/plantas/<id>` | Sí | Elimina una planta propia junto con su historial. |
+| POST | `/api/v1/plantas/<id>/dispositivo` | Sí | Inicia una vinculación temporal con el código escaneado del QR. |
+| GET/DELETE | `/api/v1/plantas/<id>/dispositivo/vinculaciones/<sesion>` | Sí | Consulta o cancela una solicitud de vinculación. |
+| POST | `/api/v1/dispositivos/<id>/vinculacion/preparar` | Token del dispositivo + código temporal | El ESP32 registra los hashes antes de mostrar el QR; puede repetirse con las mismas credenciales. |
+| POST | `/api/v1/dispositivos/<id>/vinculacion/confirmar` | Código + token del dispositivo; aprobación física para completar | El ESP32 confirma o consulta una solicitud preparada. |
 | POST | `/api/v1/dispositivos/<id>/mediciones` | Token de dispositivo | Endpoint para el ESP32. Registra lecturas de sensores (ver contrato abajo). |
 | GET | `/api/v1/plantas/<id>/historial` | Sí | Devuelve el historial de diagnósticos de una planta. |
 | GET | `/api/v1/especies` | No | Lista las especies soportadas y sus rangos de referencia. |
 | WebSocket | `/api/v1/ws/mediciones` | Sí (JWT) | Envía en vivo las mediciones aceptadas de las plantas del usuario. |
 | GET | `/health` | No | Verificación de disponibilidad del servicio. |
 
-El frontend web es mobile-first e incluye bienvenida, registro/inicio de sesión, colección y detalle de plantas, historial y diagnóstico de la última medición. Al llegar una medición aceptada, la colección, el detalle, el historial y el diagnóstico se actualizan sin recargar la página. La pantalla de conexión del ESP32 y recuperación de contraseña se mantienen como funciones próximamente disponibles. Al eliminar una planta también se eliminan sus mediciones.
+El frontend web es mobile-first e incluye bienvenida, registro/inicio de sesión, colección y detalle de plantas, historial, diagnóstico de la última medición y vinculación del ESP32 mediante escaneo de QR. Al llegar una medición aceptada, la colección, el detalle, el historial y el diagnóstico se actualizan sin recargar la página. Al eliminar una planta también se eliminan sus mediciones.
+
+### Vinculación segura mediante QR
+
+El firmware genera y guarda en la memoria NVS del ESP32 un ID aleatorio y un token permanente únicos. Antes de mostrar el QR, el dispositivo envía por HTTPS su ID, el hash de su token permanente y el hash de un código temporal aleatorio; el servidor conserva la sesión durante cinco minutos. El QR solo contiene el ID y el código (`PT1:<id>:<codigo>`), nunca el token permanente. El usuario inicia sesión, selecciona una planta y escanea el QR desde la pantalla de conexión. La aplicación reclama la sesión preparada para esa planta, pero eso no vincula el dispositivo por sí solo: después de escanear, alguien debe mantener BOOT presionado durante dos segundos en el ESP32. Solo entonces el dispositivo confirma por HTTPS con su token permanente y el backend verifica ambos hashes antes de asociarlo a la planta.
+
+No se requiere pre-registrar manualmente los dispositivos: el primer contacto seguro crea automáticamente su sesión temporal. Al primer arranque, el firmware muestra el QR solo después de que el servidor confirme la preparación. Para iniciar una nueva vinculación en un dispositivo ya vinculado, mantén presionado BOOT durante cinco segundos mientras está encendido; después de escanear, vuelve a mantenerlo dos segundos para aprobar la solicitud. El firmware envía `X-Pairing-Approval: confirm` únicamente tras esa acción física, por lo que una foto del QR no basta para completar la vinculación. Si no se escanea, el código caduca a los cinco minutos y el ESP32 prepara uno nuevo. Para escanear desde la web, usa un navegador compatible con `BarcodeDetector` (Chrome o Edge actualizado) y abre la aplicación mediante HTTPS o `localhost`, con permiso de cámara.
+
+Los dispositivos ya vinculados que todavía usan el firmware anterior pueden seguir enviando mediciones. Para usar la vinculación QR deben actualizar el firmware; al hacerlo, el dispositivo genera credenciales nuevas y debe vincularse otra vez desde la aplicación.
 
 ### Actualizaciones en vivo
 

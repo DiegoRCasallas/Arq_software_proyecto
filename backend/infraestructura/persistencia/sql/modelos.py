@@ -52,6 +52,17 @@ class PlantaModelo(db.Model):
 
     mediciones = db.relationship('MedicionModelo', backref='planta', lazy=True)
 
+class SesionVinculacionModelo(db.Model):
+    __tablename__ = 'sesiones_vinculacion'
+    id = db.Column(db.String(64), primary_key=True)
+    dispositivo_id = db.Column(db.String, nullable=False, unique=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    planta_id = db.Column(db.Integer, db.ForeignKey('plantas.id'))
+    codigo_hash = db.Column(db.String(64), nullable=False)
+    token_dispositivo_hash = db.Column(db.String, nullable=False)
+    expira_en = db.Column(db.DateTime, nullable=False)
+    completada_en = db.Column(db.DateTime)
+
 class MedicionModelo(db.Model):
     __tablename__ = 'mediciones'
     id = db.Column(db.Integer, primary_key=True)

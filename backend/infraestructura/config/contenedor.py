@@ -90,6 +90,17 @@ class Contenedor:
             repo_plantas=self.repo_plantas,
             hasher=self.hasher,
         )
+        from infraestructura.persistencia.sql.repositorio_sesiones_vinculacion_sql import (
+            RepositorioSesionesVinculacionSQL,
+        )
+        from aplicacion.casos_uso.vinculacion_qr import VinculacionQR
+
+        self.vinculacion_qr_use_case = VinculacionQR(
+            repo_plantas=self.repo_plantas,
+            repo_sesiones=RepositorioSesionesVinculacionSQL(),
+            hasher=self.hasher,
+            caso_vincular=self.vincular_dispositivo_use_case,
+        )
         self.desvincular_dispositivo_use_case = DesvincularDispositivo(
             repo_plantas=self.repo_plantas,
         )

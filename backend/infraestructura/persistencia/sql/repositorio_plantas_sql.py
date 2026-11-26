@@ -1,8 +1,13 @@
+from datetime import datetime
+
+from sqlalchemy import update
+
 from dominio.valores.estado_animo import EstadoAnimo
 from infraestructura.persistencia.sql.modelos import (
     db,
     MedicionModelo,
     PlantaModelo,
+    SesionVinculacionModelo,
     ValorMedicionModelo,
 )
 
@@ -96,6 +101,16 @@ class RepositorioPlantasSQL:
         )
         db.session.execute(
             db.delete(MedicionModelo).where(MedicionModelo.planta_id == planta_id)
+        )
+        db.session.execute(
+            update(SesionVinculacionModelo)
+            .where(SesionVinculacionModelo.planta_id == planta_id)
+            .values(
+                usuario_id=None,
+                planta_id=None,
+                expira_en=datetime.utcnow(),
+                completada_en=None,
+            )
         )
         db.session.delete(planta_db)
         db.session.commit()

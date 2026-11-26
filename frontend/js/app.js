@@ -8,6 +8,10 @@
 let medicionesSocket = null;
 let socketReintento = null;
 let socketHeartbeat = null;
+let qrStream = null;
+let qrScanTimer = null;
+let qrPairingAttempt = 0;
+let qrPairingSessionId = null;
 
 const PARAMETER_LABELS = {
     temperatura: 'Temperatura',
@@ -117,6 +121,10 @@ function mostrarToast(mensaje, tipo = 'info') {
 function mostrarPantalla(idActiva) {
     const requiereSesion = !['bienvenida', 'login', 'registro'].includes(idActiva);
     if (requiereSesion && !API.getToken()) idActiva = 'bienvenida';
+
+    if (idActiva !== 'conectar') {
+        cancelarVinculacionQR(false);
+    }
 
     document.querySelectorAll('.pantalla').forEach((pantalla) => {
         pantalla.classList.toggle('activa', pantalla.id === `pantalla-${idActiva}`);
@@ -669,12 +677,17 @@ async function cargarConectarDispositivo() {
         return;
     }
 
-    const form = document.getElementById('form-conectar-dispositivo');
     const btnDesvincular = document.getElementById('btn-desvincular-dispositivo');
     const titulo = document.getElementById('conectar-estado-titulo');
     const texto = document.getElementById('conectar-estado-texto');
-    limpiarErrorFormulario(form);
-    form.reset();
+    const estadoQR = document.getElementById('qr-estado');
+    const btnEscanear = document.getElementById('btn-escanear-qr');
+    const btnCancelar = document.getElementById('btn-cancelar-vinculacion');
+    detenerCamaraQR();
+    qrPairingSessionId = null;
+    btnEscanear.disabled = false;
+    btnCancelar.hidden = true;
+    estadoQR.textContent = 'Mantén presionado el botón BOOT del ESP32 durante 5 segundos y escanea el QR de su pantalla.';
 
     try {
         const planta = await API.getPlant(appState.plantId);
@@ -683,11 +696,182 @@ async function cargarConectarDispositivo() {
 
         titulo.textContent = conectado ? '● Dispositivo vinculado' : '○ Sin dispositivo vinculado';
         texto.textContent = conectado
-            ? 'Esta planta ya tiene un ESP32 conectado. Puedes vincular uno nuevo para reemplazarlo o desvincular el actual.'
-            : 'Ingresa el ID y token configurados en tu ESP32 para empezar a recibir mediciones.';
+            ? 'Esta planta ya tiene un ESP32 conectado. Para volver a vincularlo, mantén presionado BOOT durante 5 segundos; tras escanear, confirma en el dispositivo durante 2 segundos.'
+            : 'Mantén presionado el botón BOOT del ESP32 durante 5 segundos y escanea el QR que aparece en su pantalla.';
         btnDesvincular.hidden = !conectado;
     } catch (error) {
         mostrarToast(error.message, 'error');
+    }
+}
+
+function detenerCamaraQR() {
+    window.clearTimeout(qrScanTimer);
+    qrScanTimer = null;
+    if (qrStream) {
+        qrStream.getTracks().forEach((track) => track.stop());
+        qrStream = null;
+    }
+    const video = document.getElementById('qr-camera');
+    if (video) {
+        video.pause();
+        video.srcObject = null;
+        video.hidden = true;
+    }
+}
+
+async function cancelarVinculacionQR(mostrarEstado = true) {
+    const sesionId = qrPairingSessionId;
+    const plantaId = appState.plantId;
+    qrPairingSessionId = null;
+    qrPairingAttempt += 1;
+    detenerCamaraQR();
+
+    document.getElementById('btn-escanear-qr').disabled = false;
+    document.getElementById('btn-cancelar-vinculacion').hidden = true;
+    if (sesionId && plantaId) {
+        try {
+            await API.cancelDevicePairing(plantaId, sesionId);
+        } catch (error) {
+            mostrarToast(`No se pudo cancelar la vinculacion: ${error.message}`, 'error');
+        }
+    }
+    if (mostrarEstado) {
+        document.getElementById('qr-estado').textContent =
+            'Vinculacion cancelada. El codigo temporal ya no podra usarse.';
+    }
+}
+
+function decodificarQRVinculacion(valor) {
+    const coincidencia = /^PT1:([a-fA-F0-9]{24}):([a-fA-F0-9]{32})$/.exec(valor.trim());
+    if (!coincidencia) {
+        throw new Error('El QR no corresponde a una solicitud de vinculacion PlantTech.');
+    }
+    return {
+        dispositivoId: coincidencia[1].toLowerCase(),
+        codigo: coincidencia[2].toLowerCase(),
+    };
+}
+
+async function esperarConfirmacionVinculacion(plantaId, sesionId, intento) {
+    while (intento === qrPairingAttempt) {
+        const estado = await API.getDevicePairing(plantaId, sesionId);
+        if (intento !== qrPairingAttempt) return;
+        if (estado.estado === 'completada') {
+            qrPairingSessionId = null;
+            qrPairingAttempt += 1;
+            detenerCamaraQR();
+            document.getElementById('btn-escanear-qr').disabled = false;
+            document.getElementById('btn-cancelar-vinculacion').hidden = true;
+            document.getElementById('qr-estado').textContent = 'Dispositivo vinculado correctamente.';
+            mostrarToast('Dispositivo vinculado correctamente.', 'success');
+            mostrarPantalla('detalles');
+            return;
+        }
+        if (estado.estado === 'expirada') {
+            throw new Error('El codigo temporal expiro. Vuelve a escanear el QR del ESP32.');
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
+}
+
+async function procesarQRVinculacion(valor, intento) {
+    detenerCamaraQR();
+    const btnEscanear = document.getElementById('btn-escanear-qr');
+    const estadoQR = document.getElementById('qr-estado');
+    btnEscanear.disabled = true;
+
+    try {
+        const datosQR = decodificarQRVinculacion(valor);
+        estadoQR.textContent = 'QR leído. Confirma la solicitud en el ESP32 manteniendo BOOT durante 2 segundos.';
+        const solicitud = await API.linkDevice(
+            appState.plantId,
+            datosQR.dispositivoId,
+            datosQR.codigo
+        );
+        if (intento !== qrPairingAttempt) {
+            try {
+                await API.cancelDevicePairing(appState.plantId, solicitud.sesion_id);
+            } catch (error) {
+                mostrarToast(`No se pudo cancelar la vinculacion: ${error.message}`, 'error');
+            }
+            return;
+        }
+        qrPairingSessionId = solicitud.sesion_id;
+        await esperarConfirmacionVinculacion(appState.plantId, solicitud.sesion_id, intento);
+    } catch (error) {
+        if (intento === qrPairingAttempt) {
+            estadoQR.textContent = error.message;
+            btnEscanear.disabled = false;
+            document.getElementById('btn-cancelar-vinculacion').hidden = true;
+            qrPairingSessionId = null;
+            qrPairingAttempt += 1;
+        }
+    }
+}
+
+async function iniciarEscaneoQR() {
+    const estadoQR = document.getElementById('qr-estado');
+    const btnEscanear = document.getElementById('btn-escanear-qr');
+    const btnCancelar = document.getElementById('btn-cancelar-vinculacion');
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        estadoQR.textContent = 'La camara requiere una conexion segura HTTPS o localhost.';
+        return;
+    }
+    if (!('BarcodeDetector' in window)) {
+        estadoQR.textContent = 'Este navegador no incluye lector QR. Prueba con Chrome o Edge actualizado.';
+        return;
+    }
+
+    const intento = ++qrPairingAttempt;
+    btnEscanear.disabled = true;
+    btnCancelar.hidden = false;
+    estadoQR.textContent = 'Apunta la camara al QR que muestra el ESP32.';
+    try {
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false,
+        });
+        if (intento !== qrPairingAttempt) {
+            stream.getTracks().forEach((track) => track.stop());
+            return;
+        }
+        qrStream = stream;
+        const video = document.getElementById('qr-camera');
+        video.srcObject = qrStream;
+        video.hidden = false;
+        await video.play();
+        if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+            await new Promise((resolve) => {
+                video.addEventListener('loadeddata', resolve, { once: true });
+            });
+        }
+
+        const buscarQR = async () => {
+            if (intento !== qrPairingAttempt) return;
+            try {
+                const codigos = await detector.detect(video);
+                if (codigos.length) {
+                    await procesarQRVinculacion(codigos[0].rawValue, intento);
+                    return;
+                }
+            } catch (error) {
+                if (intento === qrPairingAttempt) {
+                    estadoQR.textContent = `No se pudo leer el QR: ${error.message}`;
+                    await cancelarVinculacionQR(false);
+                }
+                return;
+            }
+            qrScanTimer = window.setTimeout(buscarQR, 250);
+        };
+        await buscarQR();
+    } catch (error) {
+        if (intento === qrPairingAttempt) {
+            detenerCamaraQR();
+            btnEscanear.disabled = false;
+            btnCancelar.hidden = true;
+            estadoQR.textContent = `No se pudo iniciar la camara: ${error.message}`;
+        }
     }
 }
 
@@ -785,31 +969,11 @@ function configurarEventos() {
         mostrarPantalla('conectar');
     });
 
-    document.getElementById('form-conectar-dispositivo').addEventListener('submit', async (evento) => {
-        evento.preventDefault();
-        const form = evento.currentTarget;
-        limpiarErrorFormulario(form);
-        const submit = form.querySelector('[type="submit"]');
-        submit.disabled = true;
-
-        try {
-            const dispositivoId = document.getElementById('input-dispositivo-id').value.trim();
-            const token = document.getElementById('input-dispositivo-token').value.trim();
-            await API.linkDevice(appState.plantId, dispositivoId, token);
-            mostrarToast('Dispositivo vinculado correctamente.', 'success');
-            mostrarPantalla('detalles');
-            const res = await API.linkDevice(appState.plantId, dispositivoId, token);
-            const msg = res.reasignado_desde_planta_id
-                ? 'Dispositivo movido desde tu otra planta y vinculado aquí.'
-                : 'Dispositivo vinculado correctamente.';
-            mostrarToast(msg, 'success');
-            mostrarPantalla('detalles');
-        } catch (error) {
-            mostrarErrorFormulario(form, error.message);
-        } finally {
-            submit.disabled = false;
-        }
-    });
+    document.getElementById('btn-escanear-qr').addEventListener('click', iniciarEscaneoQR);
+    document.getElementById('btn-cancelar-vinculacion').addEventListener(
+        'click',
+        () => cancelarVinculacionQR()
+    );
 
     document.getElementById('btn-desvincular-dispositivo').addEventListener('click', async () => {
         if (!appState.plantId || !window.confirm('¿Desvincular el ESP32 de esta planta? Dejará de recibir mediciones.')) return;

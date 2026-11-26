@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#174d3a">
     <meta name="description" content="Cuida tus plantas con diagnósticos basados en sensores.">
     <title>PlantTech | Matera inteligente</title>
-    <link rel="stylesheet" href="styles.css?v=4">
+    <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
     <main class="app-shell">
@@ -171,16 +171,14 @@
             <section class="content-card">
                 <p class="eyebrow">ESTADO DE LA MATERA</p>
                 <h2 id="conectar-estado-titulo">Sin dispositivo vinculado</h2>
-                <p id="conectar-estado-texto" class="muted">Ingresa el ID y token configurados en tu ESP32 para empezar a recibir mediciones.</p>
+                <p id="conectar-estado-texto" class="muted">Mantén presionado el botón BOOT del ESP32 durante 5 segundos y escanea el QR que aparece en su pantalla.</p>
             </section>
-            <form id="form-conectar-dispositivo" class="form-card">
-                <label for="input-dispositivo-id">ID del dispositivo</label>
-                <input id="input-dispositivo-id" name="dispositivo_id" placeholder="Ej. ESP32_TEST_001" required>
-                <label for="input-dispositivo-token">Token del dispositivo</label>
-                <input id="input-dispositivo-token" name="token" type="password" placeholder="Token configurado en el ESP32" required>
-                <p class="helper-text">Debe coincidir exactamente con <code>DEVICE_ID</code> y <code>DEVICE_TOKEN</code> en tu firmware.</p>
-                <button class="btn btn-primary form-submit" type="submit">Vincular dispositivo</button>
-            </form>
+            <section class="content-card device-pairing-card">
+                <button id="btn-escanear-qr" class="btn btn-primary" type="button">Escanear QR del ESP32</button>
+                <video id="qr-camera" class="qr-camera" aria-label="Vista de la cámara para escanear el QR" playsinline muted hidden></video>
+                <p id="qr-estado" class="helper-text" role="status" aria-live="polite">El codigo es temporal; el token permanente no se muestra en el QR.</p>
+                <button id="btn-cancelar-vinculacion" class="btn btn-outline" type="button" hidden>Cancelar vinculacion</button>
+            </section>
             <button id="btn-desvincular-dispositivo" class="btn btn-danger" type="button" hidden>Desvincular dispositivo</button>
         </section>
 
@@ -229,14 +227,8 @@
     </nav>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-<<<<<<< HEAD
-    <script src="js/config.js?v=2"></script>
-    <script src="js/api.js?v=2"></script>
-    <script src="js/app.js?v=3"></script>
-=======
-    <script src="js/config.js?v=4"></script>
-    <script src="js/api.js?v=4"></script>
-    <script src="js/app.js?v=4"></script>
->>>>>>> 7bd817705d32a136d23e33b86fce476dbd715355
+    <script src="js/config.js?v=5"></script>
+    <script src="js/api.js?v=5"></script>
+    <script src="js/app.js?v=5"></script>
 </body>
 </html>
