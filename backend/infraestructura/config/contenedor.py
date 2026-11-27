@@ -2,12 +2,15 @@ import os
 from dominio.servicios.evaluador_planta import EvaluadorPlanta
 from dominio.servicios.estrategia_agregacion_por_conteo import EstrategiaAgregacionPorConteo
 from dominio.servicios.generador_recomendaciones import GeneradorRecomendaciones
+from dominio.servicios.motor_gamificacion import MotorGamificacion
 from aplicacion.casos_uso.registrar_medicion import RegistrarMedicion
+from aplicacion.casos_uso.registrar_partida_minijuego import RegistrarPartidaMinijuego
 from infraestructura.persistencia.sql.repositorio_mediciones_sql import RepositorioMedicionesSQL
 from infraestructura.persistencia.sql.tabla_referencia_sql import TablaReferenciaSQL
 from infraestructura.persistencia.csv.tabla_referencia_csv import TablaReferenciaCSV
 from infraestructura.persistencia.sql.repositorio_plantas_sql import RepositorioPlantasSQL
 from infraestructura.seguridad.hasher_werkzeug import HasherWerkzeug
+from infraestructura.tiempo.reloj_sistema import RelojSistema
 from aplicacion.casos_uso.consultar_historial import ConsultarHistorial
 from aplicacion.casos_uso.listar_especies import ListarEspeciesUseCase
 
@@ -31,12 +34,21 @@ class Contenedor:
             self.tabla_referencia = TablaReferenciaSQL()
 
         # 3. Ensamblar los Casos de Uso
+        self.motor_gamificacion = MotorGamificacion()
+        self.reloj = RelojSistema(zona_horaria="America/Bogota")
         self.registrar_medicion_use_case = RegistrarMedicion(
-            repo_plantas=self.repo_plantas,
             hasher_tokens=self.hasher,
+            repo_plantas=self.repo_plantas,
+            repo_mediciones=self.repo_mediciones,
             tabla_referencia=self.tabla_referencia,
             evaluador_planta=self.evaluador,
-            repo_mediciones=self.repo_mediciones
+            motor_gamificacion=self.motor_gamificacion,
+            proveedor_tiempo=self.reloj,
+        )
+
+        self.registrar_partida_minijuego_use_case = RegistrarPartidaMinijuego(
+            repo_plantas=self.repo_plantas,
+            motor_gamificacion=self.motor_gamificacion,
         )
 
         # 4. Configurar Adaptadores de Seguridad y Usuarios
@@ -68,6 +80,29 @@ class Contenedor:
 
         self.listar_especies_use_case = ListarEspeciesUseCase(
             tabla_referencia=self.tabla_referencia
+        )
+
+        # 5. Casos de uso de vinculación de dispositivos (QR)
+        from aplicacion.casos_uso.vincular_dispositivo import VincularDispositivo
+        from aplicacion.casos_uso.desvincular_dispositivo import DesvincularDispositivo
+
+        self.vincular_dispositivo_use_case = VincularDispositivo(
+            repo_plantas=self.repo_plantas,
+            hasher=self.hasher,
+        )
+        from infraestructura.persistencia.sql.repositorio_sesiones_vinculacion_sql import (
+            RepositorioSesionesVinculacionSQL,
+        )
+        from aplicacion.casos_uso.vinculacion_qr import VinculacionQR
+
+        self.vinculacion_qr_use_case = VinculacionQR(
+            repo_plantas=self.repo_plantas,
+            repo_sesiones=RepositorioSesionesVinculacionSQL(),
+            hasher=self.hasher,
+            caso_vincular=self.vincular_dispositivo_use_case,
+        )
+        self.desvincular_dispositivo_use_case = DesvincularDispositivo(
+            repo_plantas=self.repo_plantas,
         )
 
 contenedor_app = Contenedor()

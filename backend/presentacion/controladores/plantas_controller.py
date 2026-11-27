@@ -1,9 +1,10 @@
+import re
 from flask import Blueprint, jsonify, request, g
 from presentacion.seguridad.autenticacion import requiere_jwt
 from infraestructura.config.contenedor import contenedor_app
 from dominio.excepciones.errores_dominio import ErrorDominio
 
-plantas_bp = Blueprint('plantas', __name__, url_prefix='/api/v1/plantas')
+plantas_bp = Blueprint("plantas", __name__, url_prefix="/api/v1/plantas")
 
 
 def _serializar_planta(planta, historial=None):
@@ -27,6 +28,7 @@ def _serializar_planta(planta, historial=None):
         "apodo": planta.apodo,
         "especie": planta.especie,
         "dispositivo_conectado": bool(planta.dispositivo_id),
+        "gamificacion": planta.resumen_gamificacion(),
         "ultima_medicion": ultima_medicion,
     }
 
@@ -105,6 +107,79 @@ def eliminar_planta(planta_id):
     return jsonify({"mensaje": "Planta eliminada"}), 200
 
 
+@plantas_bp.route('/<int:planta_id>/dispositivo', methods=['POST'])
+@requiere_jwt
+def vincular_dispositivo(planta_id):
+    """
+    Reclama para esta planta una sesión preparada por el ESP32. El dispositivo
+    requiere una aprobación física antes de completar la vinculación.
+    """
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "Se esperaba un objeto JSON"}), 400
+
+    dispositivo_id = datos.get("dispositivo_id")
+    codigo = datos.get("codigo_vinculacion")
+
+    if not isinstance(dispositivo_id, str) or not re.fullmatch(r"[a-fA-F0-9]{24}", dispositivo_id):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "El ID del dispositivo no es válido"}), 400
+    if not isinstance(codigo, str) or not re.fullmatch(r"[a-fA-F0-9]{32}", codigo):
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "El código QR no es válido"}), 400
+
+    try:
+        resultado = contenedor_app.vinculacion_qr_use_case.solicitar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            dispositivo_id=dispositivo_id.lower(),
+            codigo=codigo.lower(),
+        )
+        return jsonify(resultado), 202
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
+
+
+@plantas_bp.route('/<int:planta_id>/dispositivo/vinculaciones/<string:sesion_id>', methods=['GET'])
+@requiere_jwt
+def consultar_vinculacion_dispositivo(planta_id, sesion_id):
+    try:
+        resultado = contenedor_app.vinculacion_qr_use_case.consultar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            sesion_id=sesion_id,
+        )
+        return jsonify(resultado), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 404
+
+
+@plantas_bp.route('/<int:planta_id>/dispositivo/vinculaciones/<string:sesion_id>', methods=['DELETE'])
+@requiere_jwt
+def cancelar_vinculacion_dispositivo(planta_id, sesion_id):
+    try:
+        contenedor_app.vinculacion_qr_use_case.cancelar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            sesion_id=sesion_id,
+        )
+        return jsonify({"estado": "cancelada"}), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 404
+
+
+@plantas_bp.route('/<int:planta_id>/dispositivo', methods=['DELETE'])
+@requiere_jwt
+def desvincular_dispositivo(planta_id):
+    """Desvincula el ESP32 de la planta. El dispositivo dejará de poder enviar mediciones."""
+    try:
+        contenedor_app.desvincular_dispositivo_use_case.ejecutar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+        )
+        return jsonify({"mensaje": "Dispositivo desvinculado correctamente"}), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
+
+
 @plantas_bp.route('/<int:planta_id>/historial', methods=['GET'])
 @requiere_jwt
 def historial(planta_id):
@@ -133,3 +208,21 @@ def historial(planta_id):
         return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400
     except Exception:
         return jsonify({"error": "ERROR_INTERNO", "mensaje": "Fallo al consultar el historial"}), 500
+
+
+@plantas_bp.route('/<int:planta_id>/minijuego', methods=['POST'])
+@requiere_jwt
+def registrar_minijuego(planta_id):
+    datos = request.get_json(silent=True)
+    if not isinstance(datos, dict) or "puntaje" not in datos:
+        return jsonify({"error": "DATOS_INVALIDOS", "mensaje": "Se requiere el campo puntaje"}), 400
+
+    try:
+        resultado = contenedor_app.registrar_partida_minijuego_use_case.ejecutar(
+            usuario_id=g.usuario_id,
+            planta_id=planta_id,
+            puntaje=datos["puntaje"],
+        )
+        return jsonify(resultado), 200
+    except ErrorDominio as e:
+        return jsonify({"error": "ERROR_DE_NEGOCIO", "mensaje": str(e)}), 400

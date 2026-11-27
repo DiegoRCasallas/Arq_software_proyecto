@@ -83,5 +83,36 @@ const API = (() => {
         getHistory(plantaId) {
             return request(`/plantas/${encodeURIComponent(plantaId)}/historial?limite=50`);
         },
+        playMinigame(plantaId, puntaje) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/minijuego`, {
+                method: 'POST',
+                body: JSON.stringify({ puntaje }),
+            });
+        },
+        linkDevice(plantaId, dispositivoId, codigoVinculacion) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/dispositivo`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    dispositivo_id: dispositivoId,
+                    codigo_vinculacion: codigoVinculacion,
+                }),
+            });
+        },
+        getDevicePairing(plantaId, sessionId) {
+            return request(
+                `/plantas/${encodeURIComponent(plantaId)}/dispositivo/vinculaciones/${encodeURIComponent(sessionId)}`
+            );
+        },
+        cancelDevicePairing(plantaId, sessionId) {
+            return request(
+                `/plantas/${encodeURIComponent(plantaId)}/dispositivo/vinculaciones/${encodeURIComponent(sessionId)}`,
+                { method: 'DELETE' }
+            );
+        },
+        unlinkDevice(plantaId) {
+            return request(`/plantas/${encodeURIComponent(plantaId)}/dispositivo`, {
+                method: 'DELETE',
+            });
+        },  
     };
 })();

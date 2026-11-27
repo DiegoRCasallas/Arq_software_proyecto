@@ -1,14 +1,34 @@
-const appState = {
+ const appState = {
     plantId: null,
     plant: null,
     plants: [],
     toastTimer: null,
 };
 
+let medicionesSocket = null;
+let socketReintento = null;
+let socketHeartbeat = null;
+let qrStream = null;
+let qrScanTimer = null;
+let qrPairingAttempt = 0;
+let qrPairingSessionId = null;
+
 const PARAMETER_LABELS = {
     temperatura: 'Temperatura',
     humedad: 'Humedad del suelo (agua)',
     luz: 'Luz',
+};
+
+const CARITAS_ANIMO = {
+    FELIZ:       { cara: '( ˘ ▽ ˘ )',     texto: '¡Estoy feliz!',         color: '#1f7a4c' },
+    SEDIENTA:    { cara: '( ಥ_ಥ )',       texto: '¡Necesito agua!',       color: '#2563eb' },
+    AHOGADA:     { cara: '( ◎_◎; ) ~',    texto: '¡Mucha agua!',          color: '#1d4ed8' },
+    SOFOCADA:    { cara: '( ＠_＠; )',     texto: '¡Hace mucho calor!',    color: '#dc2626' },
+    CON_FRIO:    { cara: '( ≧﹏≦ )',      texto: '¡Tengo frío!',          color: '#0284c7' },
+    SIN_LUZ:     { cara: '( -_- )',       texto: 'Necesito más luz',      color: '#d97706' },
+    DESLUMBRADA: { cara: '( >_< ) ☀',     texto: '¡Demasiada luz!',       color: '#ea580c' },
+    DORMIDA:     { cara: '( ˘ω˘ ) zZ',    texto: 'Descansando…',          color: '#6d28d9' },
+    EN_RIESGO:   { cara: '( x _ x )',     texto: '¡Revisa mis sensores!', color: '#dc2626' },
 };
 
 const CARE_TIPS = {
@@ -63,6 +83,7 @@ function traducirEstado(estado) {
         BAJO: 'Bajo',
         OPTIMO: 'Óptimo',
         ALTO: 'Alto',
+        REPOSO_NOCTURNO: 'En reposo (noche)',
     })[estado] || 'Sin datos';
 }
 
@@ -75,6 +96,7 @@ function claseEstado(estado) {
         BAJO: 'warning',
         OPTIMO: 'healthy',
         ALTO: 'warning',
+        REPOSO_NOCTURNO: 'healthy',
     })[estado] || 'neutral';
 }
 
@@ -100,13 +122,17 @@ function mostrarPantalla(idActiva) {
     const requiereSesion = !['bienvenida', 'login', 'registro'].includes(idActiva);
     if (requiereSesion && !API.getToken()) idActiva = 'bienvenida';
 
+    if (idActiva !== 'conectar') {
+        cancelarVinculacionQR(false);
+    }
+
     document.querySelectorAll('.pantalla').forEach((pantalla) => {
         pantalla.classList.toggle('activa', pantalla.id === `pantalla-${idActiva}`);
     });
 
     const nav = document.getElementById('menu-inferior');
     const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
-    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && idActiva !== 'diagnostico';
+    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar'].includes(idActiva);
     nav.hidden = !navVisible;
     document.body.classList.toggle('diagnosis-active', idActiva === 'diagnostico');
     document.querySelectorAll('.nav-item').forEach((item) => {
@@ -114,12 +140,15 @@ function mostrarPantalla(idActiva) {
     });
 
     localStorage.setItem('pantalla_actual', idActiva);
+    if (idActiva !== 'minijuego') detenerMinijuego();
     if (idActiva === 'mis-plantas') cargarPlantas();
     if (idActiva === 'detalles') cargarDetalles();
     if (idActiva === 'historial') cargarHistorial();
     if (idActiva === 'diagnostico') cargarDiagnostico();
+    if (idActiva === 'minijuego') prepararMinijuego();
     if (idActiva === 'add-planta') cargarEspecies();
     if (idActiva === 'ajustes') cargarAjustes();
+    if (idActiva === 'conectar') cargarConectarDispositivo();
 }
 
 function renderVacio(contenedor, titulo, mensaje, accion = '') {
@@ -159,7 +188,7 @@ async function cargarPlantas() {
                     <span class="plant-avatar" aria-hidden="true">🪴</span>
                     <span class="plant-card-content">
                         <span class="plant-card-top"><strong>${escapeHTML(nombre)}</strong><span class="status-pill ${claseEstado(estado)}">${traducirEstado(estado)}</span></span>
-                        <span class="plant-species">${escapeHTML(planta.especie)}</span>
+                        <span class="plant-species">${escapeHTML(planta.especie)} · Nivel ${escapeHTML(planta.gamificacion?.nivel ?? 1)}</span>
                         <span class="plant-reading">${escapeHTML(detalleLectura)}</span>
                     </span>
                     <span class="plant-chevron" aria-hidden="true">›</span>
@@ -200,6 +229,14 @@ function renderRecomendaciones(contenedor, medicion) {
     }
 }
 
+function renderUltimaMedicion(medicion) {
+    renderMediciones(document.getElementById('estado-actual'), medicion);
+    renderRecomendaciones(document.getElementById('recomendaciones-actuales'), medicion);
+    document.getElementById('fecha-medicion').textContent = medicion
+        ? new Date(medicion.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+        : 'Sin datos';
+}
+
 async function cargarDetalles() {
     const perfil = document.getElementById('detalle-planta');
     if (!appState.plantId) {
@@ -211,21 +248,39 @@ async function cargarDetalles() {
     try {
         const planta = await API.getPlant(appState.plantId);
         appState.plant = planta;
+
+        const gamif = planta.gamificacion || {
+            nivel: 1,
+            xp_nivel_actual: 0,
+            xp_siguiente_nivel: 100,
+            porcentaje_nivel: 0,
+            estado_animo: 'FELIZ',
+        };
+        const animo = CARITAS_ANIMO[gamif.estado_animo] || CARITAS_ANIMO.FELIZ;
+
         perfil.className = 'detail-profile';
         perfil.innerHTML = `
-            <div class="large-plant-avatar" aria-hidden="true">🪴</div>
+            <div class="large-plant-avatar gamif-avatar" aria-label="${escapeHTML(animo.texto)}">
+                <span class="gamif-face" style="color: ${animo.color};">${escapeHTML(animo.cara)}</span>
+                <span class="gamif-mood">${escapeHTML(animo.texto)}</span>
+            </div>
             <div class="detail-profile-copy">
                 <span class="eyebrow">${escapeHTML(planta.especie)}</span>
                 <h2>${escapeHTML(planta.apodo || planta.especie)}</h2>
                 <span class="connection-note ${planta.dispositivo_conectado ? 'connected' : ''}">${planta.dispositivo_conectado ? '● Dispositivo conectado' : '○ Dispositivo pendiente de conexión'}</span>
+                <div class="gamif-progress">
+                    <div class="gamif-progress-header">
+                        <strong>Nivel ${escapeHTML(gamif.nivel)}</strong>
+                        <span>${escapeHTML(gamif.xp_nivel_actual)} / ${escapeHTML(gamif.xp_siguiente_nivel)} XP</span>
+                    </div>
+                    <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="gamif-xp-fill" style="width: ${escapeHTML(gamif.porcentaje_nivel)}%;"></div>
+                    </div>
+                </div>
             </div>`;
 
         const ultima = planta.ultima_medicion;
-        renderMediciones(document.getElementById('estado-actual'), ultima);
-        renderRecomendaciones(document.getElementById('recomendaciones-actuales'), ultima);
-        document.getElementById('fecha-medicion').textContent = ultima
-            ? new Date(ultima.fecha).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
-            : 'Sin datos';
+        renderUltimaMedicion(ultima);
         const claveEspecie = (planta.especie || '').trim().toLowerCase();
         const cuidados = CARE_TIPS[claveEspecie] || [
             'Revisa la humedad del sustrato antes de regar.',
@@ -233,7 +288,14 @@ async function cargarDetalles() {
             'Mantén un buen drenaje para evitar exceso de agua.',
         ];
         document.getElementById('cuidados-especie').innerHTML = cuidados.map((tip) => `<li>${escapeHTML(tip)}</li>`).join('');
-    } catch (error) {
+        const btnConectar = document.getElementById('btn-conectar');
+        if (btnConectar) {
+            btnConectar.textContent = planta.dispositivo_conectado
+                ? 'Gestionar dispositivo'
+                : 'Conectar dispositivo';
+        }
+    } 
+    catch (error) {
         perfil.className = 'inline-error';
         perfil.textContent = error.message;
     }
@@ -359,6 +421,89 @@ async function cargarDiagnostico() {
     }
 }
 
+function manejarMedicionEnVivo(evento) {
+    if (!evento || evento.tipo !== 'medicion' || !evento.medicion) return;
+
+    const plantaId = String(evento.planta_id);
+    const pantalla = document.querySelector('.pantalla.activa')?.id.replace('pantalla-', '');
+    if (pantalla === 'mis-plantas') cargarPlantas();
+
+    if (String(appState.plantId) !== plantaId) return;
+    if (appState.plant) appState.plant.ultima_medicion = evento.medicion;
+
+    if (pantalla === 'detalles') renderUltimaMedicion(evento.medicion);
+    if (pantalla === 'historial') cargarHistorial();
+    if (pantalla === 'diagnostico') cargarDiagnostico();
+}
+
+function desconectarMedicionesEnVivo() {
+    window.clearTimeout(socketReintento);
+    window.clearInterval(socketHeartbeat);
+    socketReintento = null;
+    socketHeartbeat = null;
+    if (medicionesSocket) {
+        medicionesSocket.close();
+        medicionesSocket = null;
+    }
+}
+
+function conectarMedicionesEnVivo() {
+    if (!API.getToken() || typeof WebSocket === 'undefined') return;
+    if (medicionesSocket && [WebSocket.CONNECTING, WebSocket.OPEN].includes(medicionesSocket.readyState)) return;
+
+    const url = new URL('/api/v1/ws/mediciones', CONFIG.API_BASE_URL);
+    url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(url);
+    medicionesSocket = socket;
+
+    socket.addEventListener('open', () => {
+        const token = API.getToken();
+        if (!token) {
+            socket.close();
+            return;
+        }
+        socket.send(JSON.stringify({ token }));
+    });
+
+    socket.addEventListener('message', (mensaje) => {
+        let evento;
+        try {
+            evento = JSON.parse(mensaje.data);
+        } catch (error) {
+            console.error('El servidor envió un mensaje WebSocket inválido.', error);
+            socket.close(1002, 'Mensaje inválido');
+            return;
+        }
+
+        if (evento.tipo === 'autenticado') {
+            socketHeartbeat = window.setInterval(() => {
+                if (socket.readyState === WebSocket.OPEN) socket.send('ping');
+            }, 15000);
+        } else if (evento.tipo === 'medicion') {
+            manejarMedicionEnVivo(evento);
+        } else if (evento.tipo === 'error') {
+            API.logout();
+            window.dispatchEvent(new Event('sessionexpired'));
+        }
+    });
+
+    socket.addEventListener('close', (evento) => {
+        window.clearInterval(socketHeartbeat);
+        socketHeartbeat = null;
+        if (medicionesSocket === socket) medicionesSocket = null;
+        if (evento.code === 1008 && API.getToken()) {
+            API.logout();
+            window.dispatchEvent(new Event('sessionexpired'));
+            return;
+        }
+        if (API.getToken()) {
+            socketReintento = window.setTimeout(conectarMedicionesEnVivo, 3000);
+        }
+    });
+
+    socket.addEventListener('error', () => socket.close());
+}
+
 async function cargarEspecies() {
     const select = document.getElementById('planta-especie');
     if (select.dataset.loaded === 'true') return;
@@ -398,6 +543,338 @@ function limpiarErrorFormulario(formulario) {
     formulario.querySelector('.form-error')?.remove();
 }
 
+const minigameState = {
+    activo: false,
+    puntaje: 0,
+    tiempo: 20,
+    intervaloTiempo: null,
+    intervaloSpawn: null,
+};
+
+function detenerMinijuego() {
+    minigameState.activo = false;
+    window.clearInterval(minigameState.intervaloTiempo);
+    window.clearInterval(minigameState.intervaloSpawn);
+    const tablero = document.getElementById('mg-tablero');
+    if (tablero) tablero.innerHTML = '';
+}
+
+function prepararMinijuego() {
+    if (!appState.plantId) {
+        mostrarPantalla('mis-plantas');
+        return;
+    }
+    detenerMinijuego();
+    document.getElementById('mg-tiempo').textContent = '20';
+    document.getElementById('mg-puntaje').textContent = '0';
+    document.getElementById('mg-resultado').hidden = true;
+    const btn = document.getElementById('btn-iniciar-mg');
+    btn.disabled = false;
+    btn.textContent = 'Empezar partida';
+}
+
+function mostrarFeedbackMinijuego(tablero, xPorcentaje, yPx, puntos) {
+    const tag = document.createElement('span');
+    tag.className = `mg-feedback ${puntos >= 0 ? 'positivo' : 'negativo'}`;
+    tag.textContent = puntos >= 0 ? `+${puntos}` : `${puntos}`;
+    tag.style.left = `${xPorcentaje}%`;
+    tag.style.top = `${Math.max(12, yPx)}px`;
+    tablero.appendChild(tag);
+    window.setTimeout(() => tag.remove(), 550);
+}
+
+function crearElementoMinijuego() {
+    if (!minigameState.activo) return;
+    const tablero = document.getElementById('mg-tablero');
+
+    // Probabilidades: 35% agua, 35% sol, 22% plaga, 8% abono brillante (+20 pts)
+    const r = Math.random();
+    let item;
+    if (r < 0.35) {
+        item = { emoji: '💧', puntos: 10, factorVelocidad: 1.0 };
+    } else if (r < 0.70) {
+        item = { emoji: '☀️', puntos: 10, factorVelocidad: 1.0 };
+    } else if (r < 0.92) {
+        item = { emoji: '🐛', puntos: -15, factorVelocidad: 0.9 };
+    } else {
+        item = { emoji: '✨', puntos: 20, factorVelocidad: 0.75 };
+    }
+
+    // Dificultad progresiva: conforme baja el tiempo, caen más rápido
+    const progreso = (20 - minigameState.tiempo) / 20; // de 0.0 a 1.0
+    const duracionBase = 1.35 - (progreso * 0.45);     // de 1.35s baja hasta 0.90s
+    const variacion = (Math.random() * 0.25) - 0.1;
+    const duracionSeg = Math.max(0.65, (duracionBase + variacion) * item.factorVelocidad);
+
+    const posX = 6 + Math.random() * 78;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'mg-item';
+    btn.textContent = item.emoji;
+    btn.style.left = `${posX}%`;
+    btn.style.setProperty('--duracion', `${duracionSeg.toFixed(2)}s`);
+
+    btn.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        if (!minigameState.activo) return;
+        const rectTablero = tablero.getBoundingClientRect();
+        const rectBtn = btn.getBoundingClientRect();
+        minigameState.puntaje = Math.max(0, minigameState.puntaje + item.puntos);
+        document.getElementById('mg-puntaje').textContent = String(minigameState.puntaje);
+        mostrarFeedbackMinijuego(tablero, posX, rectBtn.top - rectTablero.top, item.puntos);
+        btn.remove();
+    });
+
+    tablero.appendChild(btn);
+    window.setTimeout(() => btn.remove(), Math.ceil(duracionSeg * 1000) + 100);
+}
+
+function iniciarMinijuego() {
+    prepararMinijuego();
+    minigameState.activo = true;
+    minigameState.puntaje = 0;
+    minigameState.tiempo = 20;
+    document.getElementById('btn-iniciar-mg').disabled = true;
+
+    crearElementoMinijuego();
+    minigameState.intervaloSpawn = window.setInterval(crearElementoMinijuego, 360);
+    minigameState.intervaloTiempo = window.setInterval(() => {
+        minigameState.tiempo -= 1;
+        document.getElementById('mg-tiempo').textContent = String(minigameState.tiempo);
+        if (minigameState.tiempo <= 0) finalizarMinijuego();
+    }, 1000);
+}
+
+async function finalizarMinijuego() {
+    const puntajeFinal = minigameState.puntaje;
+    detenerMinijuego();
+    const resBox = document.getElementById('mg-resultado');
+    const btn = document.getElementById('btn-iniciar-mg');
+    resBox.hidden = false;
+    resBox.innerHTML = '<p class="loading-message">Guardando experiencia…</p>';
+
+    try {
+        const res = await API.playMinigame(appState.plantId, puntajeFinal);
+        const msgTope = res.tope_diario_alcanzado
+            ? '<p class="muted">Alcanzaste el límite diario de XP por minijuego. ¡Vuelve mañana!</p>'
+            : `<p class="muted">Aún puedes ganar ${escapeHTML(res.xp_restante_hoy)} XP hoy jugando.</p>`;
+        resBox.innerHTML = `
+            <h3>¡Partida terminada!</h3>
+            <p>Puntaje: <strong>${escapeHTML(puntajeFinal)}</strong> · Ganaste <strong>+${escapeHTML(res.xp_ganada)} XP</strong></p>
+            <p>Nivel actual: <strong>${escapeHTML(res.gamificacion.nivel)}</strong> (${escapeHTML(res.gamificacion.xp_nivel_actual)}/${escapeHTML(res.gamificacion.xp_siguiente_nivel)} XP)</p>
+            ${msgTope}`;
+    } catch (error) {
+        resBox.innerHTML = `<p class="inline-error">${escapeHTML(error.message)}</p>`;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Jugar de nuevo';
+    }
+}
+
+async function cargarConectarDispositivo() {
+    if (!appState.plantId) {
+        mostrarPantalla('mis-plantas');
+        return;
+    }
+
+    const btnDesvincular = document.getElementById('btn-desvincular-dispositivo');
+    const titulo = document.getElementById('conectar-estado-titulo');
+    const texto = document.getElementById('conectar-estado-texto');
+    const estadoQR = document.getElementById('qr-estado');
+    const btnEscanear = document.getElementById('btn-escanear-qr');
+    const btnCancelar = document.getElementById('btn-cancelar-vinculacion');
+    detenerCamaraQR();
+    qrPairingSessionId = null;
+    btnEscanear.disabled = false;
+    btnCancelar.hidden = true;
+    estadoQR.textContent = 'Mantén presionado el botón BOOT del ESP32 durante 5 segundos y escanea el QR de su pantalla.';
+
+    try {
+        const planta = await API.getPlant(appState.plantId);
+        appState.plant = planta;
+        const conectado = Boolean(planta.dispositivo_conectado);
+
+        titulo.textContent = conectado ? '● Dispositivo vinculado' : '○ Sin dispositivo vinculado';
+        texto.textContent = conectado
+            ? 'Esta planta ya tiene un ESP32 conectado. Para volver a vincularlo, mantén presionado BOOT durante 5 segundos; tras escanear, confirma en el dispositivo durante 2 segundos.'
+            : 'Mantén presionado el botón BOOT del ESP32 durante 5 segundos y escanea el QR que aparece en su pantalla.';
+        btnDesvincular.hidden = !conectado;
+    } catch (error) {
+        mostrarToast(error.message, 'error');
+    }
+}
+
+function detenerCamaraQR() {
+    window.clearTimeout(qrScanTimer);
+    qrScanTimer = null;
+    if (qrStream) {
+        qrStream.getTracks().forEach((track) => track.stop());
+        qrStream = null;
+    }
+    const video = document.getElementById('qr-camera');
+    if (video) {
+        video.pause();
+        video.srcObject = null;
+        video.hidden = true;
+    }
+}
+
+async function cancelarVinculacionQR(mostrarEstado = true) {
+    const sesionId = qrPairingSessionId;
+    const plantaId = appState.plantId;
+    qrPairingSessionId = null;
+    qrPairingAttempt += 1;
+    detenerCamaraQR();
+
+    document.getElementById('btn-escanear-qr').disabled = false;
+    document.getElementById('btn-cancelar-vinculacion').hidden = true;
+    if (sesionId && plantaId) {
+        try {
+            await API.cancelDevicePairing(plantaId, sesionId);
+        } catch (error) {
+            mostrarToast(`No se pudo cancelar la vinculacion: ${error.message}`, 'error');
+        }
+    }
+    if (mostrarEstado) {
+        document.getElementById('qr-estado').textContent =
+            'Vinculacion cancelada. El codigo temporal ya no podra usarse.';
+    }
+}
+
+function decodificarQRVinculacion(valor) {
+    const coincidencia = /^PT1:([a-fA-F0-9]{24}):([a-fA-F0-9]{32})$/.exec(valor.trim());
+    if (!coincidencia) {
+        throw new Error('El QR no corresponde a una solicitud de vinculacion PlantTech.');
+    }
+    return {
+        dispositivoId: coincidencia[1].toLowerCase(),
+        codigo: coincidencia[2].toLowerCase(),
+    };
+}
+
+async function esperarConfirmacionVinculacion(plantaId, sesionId, intento) {
+    while (intento === qrPairingAttempt) {
+        const estado = await API.getDevicePairing(plantaId, sesionId);
+        if (intento !== qrPairingAttempt) return;
+        if (estado.estado === 'completada') {
+            qrPairingSessionId = null;
+            qrPairingAttempt += 1;
+            detenerCamaraQR();
+            document.getElementById('btn-escanear-qr').disabled = false;
+            document.getElementById('btn-cancelar-vinculacion').hidden = true;
+            document.getElementById('qr-estado').textContent = 'Dispositivo vinculado correctamente.';
+            mostrarToast('Dispositivo vinculado correctamente.', 'success');
+            mostrarPantalla('detalles');
+            return;
+        }
+        if (estado.estado === 'expirada') {
+            throw new Error('El codigo temporal expiro. Vuelve a escanear el QR del ESP32.');
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 2000));
+    }
+}
+
+async function procesarQRVinculacion(valor, intento) {
+    detenerCamaraQR();
+    const btnEscanear = document.getElementById('btn-escanear-qr');
+    const estadoQR = document.getElementById('qr-estado');
+    btnEscanear.disabled = true;
+
+    try {
+        const datosQR = decodificarQRVinculacion(valor);
+        estadoQR.textContent = 'QR leído. Confirma la solicitud en el ESP32 manteniendo BOOT durante 2 segundos.';
+        const solicitud = await API.linkDevice(
+            appState.plantId,
+            datosQR.dispositivoId,
+            datosQR.codigo
+        );
+        if (intento !== qrPairingAttempt) {
+            try {
+                await API.cancelDevicePairing(appState.plantId, solicitud.sesion_id);
+            } catch (error) {
+                mostrarToast(`No se pudo cancelar la vinculacion: ${error.message}`, 'error');
+            }
+            return;
+        }
+        qrPairingSessionId = solicitud.sesion_id;
+        await esperarConfirmacionVinculacion(appState.plantId, solicitud.sesion_id, intento);
+    } catch (error) {
+        if (intento === qrPairingAttempt) {
+            estadoQR.textContent = error.message;
+            btnEscanear.disabled = false;
+            document.getElementById('btn-cancelar-vinculacion').hidden = true;
+            qrPairingSessionId = null;
+            qrPairingAttempt += 1;
+        }
+    }
+}
+
+async function iniciarEscaneoQR() {
+    const estadoQR = document.getElementById('qr-estado');
+    const btnEscanear = document.getElementById('btn-escanear-qr');
+    const btnCancelar = document.getElementById('btn-cancelar-vinculacion');
+    if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        estadoQR.textContent = 'La camara requiere una conexion segura HTTPS o localhost.';
+        return;
+    }
+    if (!('BarcodeDetector' in window)) {
+        estadoQR.textContent = 'Este navegador no incluye lector QR. Prueba con Chrome o Edge actualizado.';
+        return;
+    }
+
+    const intento = ++qrPairingAttempt;
+    btnEscanear.disabled = true;
+    btnCancelar.hidden = false;
+    estadoQR.textContent = 'Apunta la camara al QR que muestra el ESP32.';
+    try {
+        const detector = new BarcodeDetector({ formats: ['qr_code'] });
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: 'environment' } },
+            audio: false,
+        });
+        if (intento !== qrPairingAttempt) {
+            stream.getTracks().forEach((track) => track.stop());
+            return;
+        }
+        qrStream = stream;
+        const video = document.getElementById('qr-camera');
+        video.srcObject = qrStream;
+        video.hidden = false;
+        await video.play();
+        if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+            await new Promise((resolve) => {
+                video.addEventListener('loadeddata', resolve, { once: true });
+            });
+        }
+
+        const buscarQR = async () => {
+            if (intento !== qrPairingAttempt) return;
+            try {
+                const codigos = await detector.detect(video);
+                if (codigos.length) {
+                    await procesarQRVinculacion(codigos[0].rawValue, intento);
+                    return;
+                }
+            } catch (error) {
+                if (intento === qrPairingAttempt) {
+                    estadoQR.textContent = `No se pudo leer el QR: ${error.message}`;
+                    await cancelarVinculacionQR(false);
+                }
+                return;
+            }
+            qrScanTimer = window.setTimeout(buscarQR, 250);
+        };
+        await buscarQR();
+    } catch (error) {
+        if (intento === qrPairingAttempt) {
+            detenerCamaraQR();
+            btnEscanear.disabled = false;
+            btnCancelar.hidden = true;
+            estadoQR.textContent = `No se pudo iniciar la camara: ${error.message}`;
+        }
+    }
+}
+
 function configurarEventos() {
     document.addEventListener('click', (evento) => {
         const navegacion = evento.target.closest('[data-screen]');
@@ -422,6 +899,7 @@ function configurarEventos() {
         submit.disabled = true;
         try {
             await API.login(document.getElementById('email').value.trim(), document.getElementById('password').value);
+            conectarMedicionesEnVivo();
             mostrarPantalla('mis-plantas');
         } catch (error) {
             mostrarErrorFormulario(form, error.message);
@@ -488,8 +966,30 @@ function configurarEventos() {
         mostrarPantalla('diagnostico');
     });
     document.getElementById('btn-conectar').addEventListener('click', () => {
-        mostrarToast('La conexión de un dispositivo estará disponible próximamente.', 'info');
+        mostrarPantalla('conectar');
     });
+
+    document.getElementById('btn-escanear-qr').addEventListener('click', iniciarEscaneoQR);
+    document.getElementById('btn-cancelar-vinculacion').addEventListener(
+        'click',
+        () => cancelarVinculacionQR()
+    );
+
+    document.getElementById('btn-desvincular-dispositivo').addEventListener('click', async () => {
+        if (!appState.plantId || !window.confirm('¿Desvincular el ESP32 de esta planta? Dejará de recibir mediciones.')) return;
+        try {
+            await API.unlinkDevice(appState.plantId);
+            mostrarToast('Dispositivo desvinculado.', 'success');
+            mostrarPantalla('detalles');
+        } catch (error) {
+            mostrarToast(error.message, 'error');
+        }
+    });
+    document.getElementById('btn-jugar-minijuego').addEventListener('click', () => {
+        mostrarPantalla('minijuego');
+    });
+    document.getElementById('btn-iniciar-mg').addEventListener('click', iniciarMinijuego);
+    
     document.getElementById('form-planta').addEventListener('submit', async (evento) => {
         evento.preventDefault();
         const form = evento.currentTarget;
@@ -515,6 +1015,7 @@ function configurarEventos() {
     });
     document.getElementById('btn-cerrar-sesion').addEventListener('click', () => {
         API.logout();
+        desconectarMedicionesEnVivo();
         appState.plantId = null;
         appState.plant = null;
         mostrarPantalla('bienvenida');
@@ -527,6 +1028,7 @@ function configurarEventos() {
         }
     });
     window.addEventListener('sessionexpired', () => {
+        desconectarMedicionesEnVivo();
         appState.plantId = null;
         appState.plant = null;
         mostrarPantalla('bienvenida');
@@ -537,6 +1039,7 @@ function configurarEventos() {
 document.addEventListener('DOMContentLoaded', () => {
     configurarEventos();
     if (API.getToken()) {
+        conectarMedicionesEnVivo();
         const guardada = localStorage.getItem('pantalla_actual');
         mostrarPantalla(guardada && !['bienvenida', 'login', 'registro'].includes(guardada) ? guardada : 'mis-plantas');
     } else {

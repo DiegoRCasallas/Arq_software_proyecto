@@ -44,8 +44,24 @@ class PlantaModelo(db.Model):
     apodo = db.Column(db.String)
     dispositivo_id = db.Column(db.String, unique=True)
     token_dispositivo_hash = db.Column(db.String)
+    experiencia = db.Column(db.Integer, nullable=False, default=0)
+    nivel = db.Column(db.Integer, nullable=False, default=1)
+    estado_animo = db.Column(db.String(30), nullable=False, default="FELIZ")
+    xp_minijuego_hoy = db.Column(db.Integer, nullable=False, default=0)
+    fecha_ultimo_minijuego = db.Column(db.Date, nullable=True)
 
     mediciones = db.relationship('MedicionModelo', backref='planta', lazy=True)
+
+class SesionVinculacionModelo(db.Model):
+    __tablename__ = 'sesiones_vinculacion'
+    id = db.Column(db.String(64), primary_key=True)
+    dispositivo_id = db.Column(db.String, nullable=False, unique=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'))
+    planta_id = db.Column(db.Integer, db.ForeignKey('plantas.id'))
+    codigo_hash = db.Column(db.String(64), nullable=False)
+    token_dispositivo_hash = db.Column(db.String, nullable=False)
+    expira_en = db.Column(db.DateTime, nullable=False)
+    completada_en = db.Column(db.DateTime)
 
 class MedicionModelo(db.Model):
     __tablename__ = 'mediciones'

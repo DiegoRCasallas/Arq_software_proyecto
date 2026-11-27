@@ -29,9 +29,12 @@ class RepositorioMedicionesSQL:
 
     def historial(self, planta_id: int, limite: int = 50) -> list[Medicion]:
         # 1. Traer las mediciones base ordenadas por fecha descendente
-        registros = MedicionModelo.query.filter_by(planta_id=planta_id)\
-                                        .order_by(MedicionModelo.fecha.desc())\
-                                        .limit(limite).all()
+        registros = db.session.scalars(
+            db.select(MedicionModelo)
+            .where(MedicionModelo.planta_id == planta_id)
+            .order_by(MedicionModelo.fecha.desc())
+            .limit(limite)
+        ).all()
         
         resultado = []
         for reg in registros:

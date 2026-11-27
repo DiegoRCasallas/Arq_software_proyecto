@@ -57,6 +57,36 @@ def test_medicion_normal_es_saludable_y_se_guarda(app, client):
     assert contar_mediciones(app) == 1
 
 
+def test_medicion_aceptada_se_emite_al_propietario_y_una_rechazada_no(app, client, monkeypatch):
+    emisiones = []
+    monkeypatch.setattr(
+        "presentacion.controladores.mediciones_controller.emitir_medicion",
+        lambda usuario_id, evento: emisiones.append((usuario_id, evento)),
+    )
+    with app.app_context():
+        from infraestructura.config.contenedor import contenedor_app
+
+        planta = contenedor_app.repo_plantas.obtener_por_dispositivo(
+            "ESP32_TEST_001"
+        )
+        propietario_id = planta.usuario_id
+
+    respuesta = enviar(client, NORMAL)
+
+    assert respuesta.status_code == 201
+    assert len(emisiones) == 1
+    usuario_id, evento = emisiones[0]
+    assert usuario_id == propietario_id
+    assert evento["tipo"] == "medicion"
+    assert evento["planta_id"] == planta.id
+    assert evento["medicion"]["valores"] == NORMAL
+    assert evento["medicion"]["estado_general"] == "SALUDABLE"
+
+    respuesta_rechazada = enviar(client, {**NORMAL, "temperatura": 9999})
+    assert respuesta_rechazada.status_code == 400
+    assert len(emisiones) == 1
+
+
 def test_medicion_anomala_pero_posible_es_critica_y_se_guarda(app, client):
     respuesta = enviar(client, {"temperatura": 40, "humedad": 10, "luz": 9000})
 
@@ -64,6 +94,14 @@ def test_medicion_anomala_pero_posible_es_critica_y_se_guarda(app, client):
     cuerpo = respuesta.get_json()
     assert cuerpo["estado_general"] == "CRITICO"
     assert len(cuerpo["recomendaciones"]) == 3
+    assert contar_mediciones(app) == 1
+
+
+def test_medicion_parcial_de_sensores_conectados_es_aceptada(app, client):
+    respuesta = enviar(client, {"temperatura": 22})
+
+    assert respuesta.status_code == 201
+    assert respuesta.get_json()["detalle_parametros"] == {"temperatura": "OPTIMO"}
     assert contar_mediciones(app) == 1
 
 
@@ -91,7 +129,6 @@ CASOS_RECHAZADOS = [
     ("objeto", {"temperatura": {"v": 22}, "humedad": 50, "luz": 800}, "VALOR_NO_NUMERICO"),
     ("parametro desconocido", {**NORMAL, "ph": 7.0}, "PARAMETRO_DESCONOCIDO"),
     ("solo parametros desconocidos", {"ph": 7.0}, "PARAMETRO_DESCONOCIDO"),
-    ("parametro ausente", {"temperatura": 22}, "PARAMETRO_AUSENTE"),
     ("valores vacio", {}, "PARAMETRO_AUSENTE"),
     ("temperatura imposible", {**NORMAL, "temperatura": 9999}, "VALOR_FUERA_DE_RANGO_FISICO"),
     ("humedad negativa", {**NORMAL, "humedad": -5}, "VALOR_FUERA_DE_RANGO_FISICO"),

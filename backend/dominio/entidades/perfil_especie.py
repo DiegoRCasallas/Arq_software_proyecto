@@ -9,7 +9,6 @@ from typing import Dict
 
 from dominio.entidades.medicion import Medicion
 from dominio.excepciones.errores_dominio import (
-    ParametroAusente,
     ParametroDesconocido,
     ValorFueraDeRangoFisico,
 )
@@ -29,10 +28,7 @@ class PerfilEspecie:
         Reglas, en este orden:
           1. Todo parámetro enviado debe existir en el perfil.
              -> ParametroDesconocido
-          2. Todo parámetro del perfil debe venir en la medición; con datos
-             incompletos el diagnóstico sería engañoso (p. ej. "saludable"
-             porque un sensor dejó de reportar). -> ParametroAusente
-          3. Cada valor debe ser físicamente posible, es decir, estar dentro
+          2. Cada valor enviado debe ser físicamente posible, es decir, estar dentro
              de [minimo, maximo] de su rango. -> ValorFueraDeRangoFisico
 
         Lanza la primera excepción de dominio que encuentre.
@@ -40,10 +36,6 @@ class PerfilEspecie:
         for parametro in medicion.valores:
             if parametro not in self.rangos:
                 raise ParametroDesconocido(parametro, self.nombre_especie)
-
-        for parametro in self.rangos:
-            if parametro not in medicion.valores:
-                raise ParametroAusente(parametro)
 
         for parametro, valor in medicion.valores.items():
             rango = self.rangos[parametro]

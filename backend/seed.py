@@ -170,7 +170,9 @@ def poblar_datos(db_instance=db):
                     hubo_cambios = True
 
     # 3. Crear Usuario inicial si no existe
-    usuario = UsuarioModelo.query.filter_by(email="prueba@planttech.com").first()
+    usuario = db_instance.session.scalar(
+        db_instance.select(UsuarioModelo).where(UsuarioModelo.email == "prueba@planttech.com")
+    )
     if usuario is None:
         usuario = UsuarioModelo(
             nombre="Usuario Prueba",
@@ -182,7 +184,9 @@ def poblar_datos(db_instance=db):
         hubo_cambios = True
 
     # 4. Crear la Planta vinculada al ESP32 del simulador si no existe
-    planta = PlantaModelo.query.filter_by(dispositivo_id="ESP32_TEST_001").first()
+    planta = db_instance.session.scalar(
+        db_instance.select(PlantaModelo).where(PlantaModelo.dispositivo_id == "ESP32_TEST_001")
+    )
     if planta is None:
         planta = PlantaModelo(
             usuario_id=usuario.id,

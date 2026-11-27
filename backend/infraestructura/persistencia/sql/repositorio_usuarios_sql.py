@@ -3,7 +3,9 @@ from infraestructura.persistencia.sql.modelos import db, UsuarioModelo
 
 class RepositorioUsuariosSQL:
     def obtener_por_email(self, email: str) -> Usuario:
-        usuario_db = UsuarioModelo.query.filter_by(email=email).first()
+        usuario_db = db.session.scalar(
+            db.select(UsuarioModelo).where(UsuarioModelo.email == email)
+        )
         if not usuario_db:
             return None
             

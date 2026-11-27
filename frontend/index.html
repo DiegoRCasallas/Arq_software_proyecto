@@ -6,7 +6,7 @@
     <meta name="theme-color" content="#174d3a">
     <meta name="description" content="Cuida tus plantas con diagnósticos basados en sensores.">
     <title>PlantTech | Matera inteligente</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="styles.css?v=5">
 </head>
 <body>
     <main class="app-shell">
@@ -119,6 +119,7 @@
             </section>
             <div class="detail-actions">
                 <button id="btn-diagnosticar" class="btn btn-primary" type="button">Ver diagnóstico</button>
+                <button id="btn-jugar-minijuego" class="btn btn-outline" type="button">🎮 Jugar minijuego (+XP)</button>
                 <button id="btn-conectar" class="btn btn-secondary" type="button">Conectar a internet</button>
             </div>
         </section>
@@ -143,6 +144,42 @@
             </header>
             <div id="contenido-diagnostico" class="diagnosis-content" aria-live="polite"></div>
             <button class="btn btn-primary" type="button" data-screen="detalles">Volver a mi planta</button>
+        </section>
+
+        <section id="pantalla-minijuego" class="pantalla app-screen">
+            <header class="subpage-header">
+                <button class="back-button" type="button" data-screen="detalles" aria-label="Volver al detalle">←</button>
+                <h1>Cuida tu planta</h1>
+                <span class="header-spacer" aria-hidden="true"></span>
+            </header>
+            <p class="muted page-intro">Toca 💧 y ☀️ para sumar puntos. Evita las plagas 🐛.</p>
+            <div class="minigame-hud">
+                <span>⏱️ <strong id="mg-tiempo">20</strong>s</span>
+                <span>⭐ <strong id="mg-puntaje">0</strong> pts</span>
+            </div>
+            <div id="mg-tablero" class="minigame-board" aria-label="Área de juego"></div>
+            <div id="mg-resultado" class="content-card" hidden></div>
+            <button id="btn-iniciar-mg" class="btn btn-primary" type="button">Empezar partida</button>
+        </section>
+
+        <section id="pantalla-conectar" class="pantalla app-screen">
+            <header class="subpage-header">
+                <button class="back-button" type="button" data-screen="detalles" aria-label="Volver al detalle">←</button>
+                <h1>Conectar dispositivo</h1>
+                <span class="header-spacer" aria-hidden="true"></span>
+            </header>
+            <section class="content-card">
+                <p class="eyebrow">ESTADO DE LA MATERA</p>
+                <h2 id="conectar-estado-titulo">Sin dispositivo vinculado</h2>
+                <p id="conectar-estado-texto" class="muted">Mantén presionado el botón BOOT del ESP32 durante 5 segundos y escanea el QR que aparece en su pantalla.</p>
+            </section>
+            <section class="content-card device-pairing-card">
+                <button id="btn-escanear-qr" class="btn btn-primary" type="button">Escanear QR del ESP32</button>
+                <video id="qr-camera" class="qr-camera" aria-label="Vista de la cámara para escanear el QR" playsinline muted hidden></video>
+                <p id="qr-estado" class="helper-text" role="status" aria-live="polite">El codigo es temporal; el token permanente no se muestra en el QR.</p>
+                <button id="btn-cancelar-vinculacion" class="btn btn-outline" type="button" hidden>Cancelar vinculacion</button>
+            </section>
+            <button id="btn-desvincular-dispositivo" class="btn btn-danger" type="button" hidden>Desvincular dispositivo</button>
         </section>
 
         <section id="pantalla-add-planta" class="pantalla app-screen">
@@ -190,8 +227,8 @@
     </nav>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
-    <script src="js/config.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+    <script src="js/config.js?v=5"></script>
+    <script src="js/api.js?v=5"></script>
+    <script src="js/app.js?v=5"></script>
 </body>
 </html>

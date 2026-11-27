@@ -1,12 +1,41 @@
 import os
 from flask import Flask, jsonify
 from flask_cors import CORS
+from sqlalchemy import inspect, text
 from presentacion.controladores.mediciones_controller import dispositivos_bp
 from infraestructura.persistencia.sql.modelos import db
 from infraestructura.config.contenedor import contenedor_app
 from presentacion.controladores.usuarios_controller import usuarios_bp
 from presentacion.controladores.plantas_controller import plantas_bp
 from presentacion.controladores.especies_controller import crear_especies_blueprint
+from presentacion.ws.mediciones import registrar_websocket
+
+def _asegurar_columnas_plantas(db_instance):
+    """Agrega columnas nuevas a 'plantas' si la tabla ya existía sin ellas."""
+    inspector = inspect(db_instance.engine)
+    if not inspector.has_table("plantas"):
+        return
+
+    existentes = {col["name"] for col in inspector.get_columns("plantas")}
+    migraciones = {
+        "experiencia": "INTEGER NOT NULL DEFAULT 0",
+        "nivel": "INTEGER NOT NULL DEFAULT 1",
+        "estado_animo": "VARCHAR(30) NOT NULL DEFAULT 'FELIZ'",
+        "xp_minijuego_hoy": "INTEGER NOT NULL DEFAULT 0",
+        "fecha_ultimo_minijuego": "DATE",
+    }
+    faltantes = [
+        f"ALTER TABLE plantas ADD COLUMN {col} {definicion}"
+        for col, definicion in migraciones.items()
+        if col not in existentes
+    ]
+    if not faltantes:
+        return
+
+    with db_instance.engine.begin() as conn:
+        for sql in faltantes:
+            conn.execute(text(sql))
+
 
 def crear_app():
     app = Flask(__name__)
@@ -23,6 +52,7 @@ def crear_app():
     # Solo crea el esquema si no existe, basándose en los modelos aislados
     with app.app_context():
         db.create_all()
+        _asegurar_columnas_plantas(db)
         # Asegurar que las especies y rangos de referencia existan al iniciar
         try:
             from seed import poblar_datos
@@ -37,6 +67,7 @@ def crear_app():
         crear_especies_blueprint(contenedor_app.listar_especies_use_case),
         url_prefix="/api/v1",
     )
+    registrar_websocket(app)
 
     @app.get("/health")
     def health():

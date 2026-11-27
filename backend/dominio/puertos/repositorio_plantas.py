@@ -1,18 +1,30 @@
 from typing import Protocol, List, Optional
 from dominio.entidades.planta import Planta
 
+
 class RepositorioPlantas(Protocol):
     def obtener(self, planta_id: int) -> Optional[Planta]:
         ...
-        
+
     def obtener_por_dispositivo(self, dispositivo_id: str) -> Optional[Planta]:
         ...
-        
+
     def listar_por_usuario(self, usuario_id: int) -> List[Planta]:
         ...
-        
+
     def guardar(self, planta: Planta) -> Planta:
         ...
 
+    def actualizar(self, planta: Planta) -> None:
+        ...
+
     def eliminar(self, planta_id: int) -> bool:
+        ...
+
+    def actualizar_dispositivo(
+        self,
+        planta_id: int,
+        dispositivo_id: Optional[str],
+        token_hash: Optional[str],
+    ) -> None:
         ...
