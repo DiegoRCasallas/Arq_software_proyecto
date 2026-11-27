@@ -1037,7 +1037,6 @@ select:focus-visible {
     body {
         padding: 24px 0;
     }
-}
 
     .app-shell {
         min-height: calc(100vh - 48px);
@@ -1056,19 +1055,10 @@ select:focus-visible {
         min-height: calc(100vh - 48px);
     }
 
-    .bottom-nav {
-        right: auto;
-        left: 50%;
-        width: min(100%, 480px);
-        transform: translateX(-50%);
-        border: 1px solid #e8ede8;
-        border-bottom: 0;
-        border-radius: 20px 20px 0 0;
-    }
-
     .diagnosis-active {
         padding: 24px 0;
     }
+}
 
 /* === Gamificación === */
 .gamif-avatar {
@@ -1199,7 +1189,8 @@ select:focus-visible {
         scroll-behavior: auto !important;
         transition-duration: 0.01ms !important;
     }
-    
+}
+
 /* === Insignia de etapa separada del nivel/XP === */
 .gamif-etapa-row {
     margin-bottom: 6px;
@@ -1231,28 +1222,27 @@ select:focus-visible {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 20px;
 }
 
 .brand-title {
     font-weight: 800;
-    font-size: 1.05rem;
-    color: #1f5e3b;
+    font-size: 1rem;
+    color: #ffffff;
 }
 
 .menu-toggle-btn {
     width: 42px;
     height: 42px;
-    border-radius: 12px;
-    border: 1px solid #d5e6dc;
-    background: #ffffff;
-    color: #1f5e3b;
+    border-radius: 14px;
+    border: 0;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
     font-size: 1.35rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .drawer-overlay {
