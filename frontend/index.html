@@ -66,11 +66,13 @@
 
         <section id="pantalla-mis-plantas" class="pantalla app-screen">
             <header class="app-header">
-                <div class="brand-lockup"><span class="brand-mark-small" aria-hidden="true">🌿</span><span>PlantTech</span></div>
+                <div class="top-bar-menu">
+                    <span class="brand-title">🌿 PlantTech</span>
+                    <button id="btn-abrir-menu" class="menu-toggle-btn" type="button" aria-label="Abrir menú">☰</button>
+                </div>
                 <p class="eyebrow header-eyebrow">TU JARDÍN EN CASA</p>
                 <h1>Mis plantas</h1>
                 <p class="header-subtitle">Un vistazo a cómo se sienten hoy.</p>
-                <button class="header-icon-btn" type="button" data-screen="ajustes" aria-label="Ajustes">⚙️</button>
             </header>
             <div class="section-heading">
                 <h2>Tu colección</h2>
@@ -222,12 +224,21 @@
         </section>
     </main>
 
-    <nav class="bottom-nav" id="menu-inferior" aria-label="Navegación principal" hidden>
-        <button class="nav-item" type="button" data-screen="mis-plantas"><span aria-hidden="true">♧</span><span>Plantas</span></button>
-        <button class="nav-item" type="button" data-screen="add-planta"><span aria-hidden="true">＋</span><span>Añadir</span></button>
-    </nav>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
+    <div id="drawer-overlay" class="drawer-overlay" hidden></div>
+<aside id="side-drawer" class="side-drawer" aria-hidden="true">
+    <div class="drawer-header">
+        <strong>🌿 PlantTech</strong>
+        <button id="btn-cerrar-menu" class="drawer-close-btn" type="button" aria-label="Cerrar menú">✕</button>
+    </div>
+    <nav class="drawer-nav">
+        <button class="drawer-item" type="button" data-screen="mis-plantas">🌱 Mis plantas</button>
+        <button class="drawer-item" type="button" data-screen="add-planta">➕ Añadir planta</button>
+        <button class="drawer-item" type="button" data-screen="ajustes">⚙️ Ajustes</button>
+    </nav>
+</aside>
+    
     <script src="js/config.js?v=5"></script>
     <script src="js/api.js?v=5"></script>
     <script src="js/app.js?v=6"></script>
