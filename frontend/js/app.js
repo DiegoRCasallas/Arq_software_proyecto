@@ -31,6 +31,22 @@ const CARITAS_ANIMO = {
     EN_RIESGO:   { cara: '( x _ x )',     texto: '¡Revisa mis sensores!', color: '#dc2626' },
 };
 
+const ETAPAS_EVOLUCION = [
+    { nivelMin: 1, icono: '🌰', titulo: 'Semilla',      desc: 'Recién plantada' },
+    { nivelMin: 2, icono: '🌱', titulo: 'Brote',        desc: 'Primeras hojitas' },
+    { nivelMin: 3, icono: '🌿', titulo: 'Planta joven', desc: 'Creciendo fuerte' },
+    { nivelMin: 4, icono: '🪴', titulo: 'Planta adulta', desc: 'Muy bien cuidada' },
+    { nivelMin: 5, icono: '🌸', titulo: 'En floración', desc: '¡Maestra botánica!' },
+];
+
+function obtenerEtapaEvolucion(nivel) {
+    let etapa = ETAPAS_EVOLUCION[0];
+    for (const item of ETAPAS_EVOLUCION) {
+        if (nivel >= item.nivelMin) etapa = item;
+    }
+    return etapa;
+}
+
 const CARE_TIPS = {
     cinta: [
         'Prefiere humedad ambiental moderada; pulveriza sus hojas si el aire está muy seco.',
@@ -257,6 +273,7 @@ async function cargarDetalles() {
             estado_animo: 'FELIZ',
         };
         const animo = CARITAS_ANIMO[gamif.estado_animo] || CARITAS_ANIMO.FELIZ;
+        const etapa = obtenerEtapaEvolucion(gamif.nivel); // <-- 1. Calcular etapa
 
         perfil.className = 'detail-profile';
         perfil.innerHTML = `
@@ -270,7 +287,7 @@ async function cargarDetalles() {
                 <span class="connection-note ${planta.dispositivo_conectado ? 'connected' : ''}">${planta.dispositivo_conectado ? '● Dispositivo conectado' : '○ Dispositivo pendiente de conexión'}</span>
                 <div class="gamif-progress">
                     <div class="gamif-progress-header">
-                        <strong>Nivel ${escapeHTML(gamif.nivel)}</strong>
+                        <strong><span class="etapa-badge">${etapa.icono} ${escapeHTML(etapa.titulo)}</span> · Nivel ${escapeHTML(gamif.nivel)}</strong>
                         <span>${escapeHTML(gamif.xp_nivel_actual)} / ${escapeHTML(gamif.xp_siguiente_nivel)} XP</span>
                     </div>
                     <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
@@ -283,7 +300,7 @@ async function cargarDetalles() {
         renderUltimaMedicion(ultima);
         const claveEspecie = (planta.especie || '').trim().toLowerCase();
         const cuidados = CARE_TIPS[claveEspecie] || [
-            'Revisa la humedad del sustrato antes de regar.',
+            'Revisa la humedad ambiental y la ventilación del espacio.',
             'Consulta los rangos de luz y temperatura de esta especie.',
             'Mantén un buen drenaje para evitar exceso de agua.',
         ];
@@ -294,8 +311,7 @@ async function cargarDetalles() {
                 ? 'Gestionar dispositivo'
                 : 'Conectar dispositivo';
         }
-    } 
-    catch (error) {
+    } catch (error) {
         perfil.className = 'inline-error';
         perfil.textContent = error.message;
     }
