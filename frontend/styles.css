@@ -1207,3 +1207,15 @@ select:focus-visible {
 .app-shell {
     padding-bottom: 145px;
 }
+
+.etapa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: #e6f4ec;
+    color: #166534;
+    padding: 3px 10px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
