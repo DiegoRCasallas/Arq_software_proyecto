@@ -15,14 +15,14 @@ let qrPairingSessionId = null;
 
 const PARAMETER_LABELS = {
     temperatura: 'Temperatura',
-    humedad: 'Humedad del suelo (agua)',
+    humedad: 'Humedad ambiental',
     luz: 'Luz',
 };
 
 const CARITAS_ANIMO = {
     FELIZ:       { cara: '( ˘ ▽ ˘ )',     texto: '¡Estoy feliz!',         color: '#1f7a4c' },
-    SEDIENTA:    { cara: '( ಥ_ಥ )',       texto: '¡Necesito agua!',       color: '#2563eb' },
-    AHOGADA:     { cara: '( ◎_◎; ) ~',    texto: '¡Mucha agua!',          color: '#1d4ed8' },
+    SEDIENTA:    { cara: '( ಥ_ಥ )',       texto: '¡Ambiente muy seco!',   color: '#2563eb' },
+    AHOGADA:     { cara: '( ◎_◎; ) ~',    texto: '¡Aire muy húmedo!',     color: '#1d4ed8' },
     SOFOCADA:    { cara: '( ＠_＠; )',     texto: '¡Hace mucho calor!',    color: '#dc2626' },
     CON_FRIO:    { cara: '( ≧﹏≦ )',      texto: '¡Tengo frío!',          color: '#0284c7' },
     SIN_LUZ:     { cara: '( -_- )',       texto: 'Necesito más luz',      color: '#d97706' },
@@ -33,32 +33,32 @@ const CARITAS_ANIMO = {
 
 const CARE_TIPS = {
     cinta: [
-        'Riega cuando la capa superior del sustrato empiece a secarse.',
+        'Prefiere humedad ambiental moderada; pulveriza sus hojas si el aire está muy seco.',
         'Prefiere luz indirecta y espacios bien iluminados.',
-        'Evita dejar agua acumulada en la maceta.',
+        'Riega cuando la capa superior del sustrato empiece a secarse, sin encharcar.',
     ],
     albahaca: [
         'Requiere al menos 6 horas de luz solar o iluminación muy brillante.',
-        'Mantén el sustrato húmedo con buen drenaje, sin encharcar.',
+        'Agradece una buena ventilación para evitar exceso de humedad en sus hojas.',
         'Poda los brotes florales para estimular hojas frescas y densas.',
     ],
     poto: [
         'Tolera bien luz indirecta moderada y sombra parcial.',
-        'Deja secar ligeramente la capa superior de tierra entre riegos.',
+        'Se adapta bien a humedad ambiental media (45% - 70%).',
         'Limpia sus hojas ocasionalmente para mejorar la absorción de luz.',
     ],
     suculenta: [
-        'Riega de forma espaciada, permitiendo que la tierra se seque por completo.',
+        'Prefiere ambientes secos y bien ventilados; evita lugares con mucha humedad en el aire.',
         'Ubícala en un lugar con abundante luz directa para mantener su color.',
-        'Usa macetas con buen drenaje para proteger sus raíces.',
+        'Riega de forma espaciada y usa macetas con buen drenaje.',
     ],
     helecho: [
-        'Mantén el sustrato uniformemente húmedo, sin permitir que se seque del todo.',
+        'Necesita alta humedad ambiental; pulveriza agua cerca de sus frondas con frecuencia.',
         'Prefiere luz suave filtrada o semisombra; evita el sol directo.',
-        'Agradece la humedad ambiental; pulveriza agua cerca de sus frondas.',
+        'Mantén el sustrato ligeramente húmedo, sin permitir que se seque del todo.',
     ],
     orquidea: [
-        'Riega por inmersión semanalmente y escurre todo el exceso de agua.',
+        'Disfruta de humedad ambiental elevada (55% - 80%) con buena circulación de aire.',
         'Necesita luz indirecta abundante pero nunca sol directo que queme sus hojas.',
         'Utiliza sustrato poroso de corteza de pino para que sus raíces respiren.',
     ],
