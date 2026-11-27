@@ -1218,4 +1218,5 @@ select:focus-visible {
     border-radius: 999px;
     font-weight: 700;
     font-size: 0.85rem;
+    flex-wrap: wrap; gap: 6px;
 }
