@@ -344,6 +344,23 @@ static void consultarConfirmacionVinculacion() {
   }
 }
 
+static void activarModoVinculacion() {
+  if (!preferencias.putBool("paired", false)) {
+    Serial.println("No se pudo guardar el modo de vinculacion");
+    pantalla("Error NVS", "Reinicia");
+    return;
+  }
+
+  dispositivoVinculado = false;
+  guardarNuevoCodigoVinculacion();
+  ultimaRespuesta = {};
+  acumulador = {};
+  inicioPeriodo = millis();
+  ultimaMuestra = inicioPeriodo;
+  pantalla("Preparando QR", "Espera...");
+  prepararCodigoVinculacion();
+}
+
 static void revisarBotonVinculacion() {
   static uint32_t inicioPresion = 0;
   static bool accionActivada = false;
@@ -369,10 +386,13 @@ static void revisarBotonVinculacion() {
     return;
   }
 
-  if (accionActivada || !dispositivoVinculado ||
+  if (accionActivada || (!dispositivoVinculado && !vinculacionRechazada) ||
       duracionPresion < VINCULACION_BUTTON_HOLD_MS) {
     return;
   }
+  accionActivada = true;
+  activarModoVinculacion();
+  
   accionActivada = true;
   if (!preferencias.putBool("paired", false)) {
     Serial.println("No se pudo guardar el modo de vinculacion");
@@ -725,6 +745,14 @@ void loop() {
       ultimaRespuesta = r;
 
       {
+        
+      if (r.http == 401 || r.http == 404) {
+        Serial.println("Dispositivo desvinculado en el servidor. Volviendo a modo QR...");
+        activarModoVinculacion();
+        delay(10);
+        return;
+      }
+        
         String l3, l4, l5;
         formatearLineasSensores(hayTemperatura, temperatura, hayHumedad, humedad,
                                 hayLuz, luz, r, l3, l4, l5);
