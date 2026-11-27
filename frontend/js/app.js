@@ -146,14 +146,14 @@ function mostrarPantalla(idActiva) {
     document.querySelectorAll('.pantalla').forEach((pantalla) => {
         pantalla.classList.toggle('activa', pantalla.id === `pantalla-${idActiva}`);
     });
-    const nav = document.querySelector('.bottom-nav');
+
+    const nav = document.getElementById('menu-inferior') || document.querySelector('.bottom-nav');
+    const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
+    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar', 'ajustes'].includes(idActiva);
     if (nav) {
         nav.hidden = !navVisible;
     }
-    const nav = document.getElementById('menu-inferior');
-    const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
-    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar', 'ajustes'].includes(idActiva);
-    nav.hidden = !navVisible;
+
     document.body.classList.toggle('diagnosis-active', idActiva === 'diagnostico');
     document.querySelectorAll('.nav-item').forEach((item) => {
         item.classList.toggle('active', item.dataset.screen === idActiva);
@@ -297,10 +297,6 @@ async function cargarDetalles() {
                         <strong>Nivel ${escapeHTML(gamif.nivel)}</strong>
                         <span>${escapeHTML(gamif.xp_nivel_actual)} / ${escapeHTML(gamif.xp_siguiente_nivel)} XP</span>
                     </div>
-                    <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
-                        <div class="gamif-xp-fill" style="width: ${escapeHTML(gamif.porcentaje_nivel)}%;"></div>
-                    </div>
-                </div>
                     <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
                         <div class="gamif-xp-fill" style="width: ${escapeHTML(gamif.porcentaje_nivel)}%;"></div>
                     </div>
