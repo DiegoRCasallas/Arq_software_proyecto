@@ -135,6 +135,7 @@ function mostrarToast(mensaje, tipo = 'info') {
 }
 
 function mostrarPantalla(idActiva) {
+    cerrarMenuLateral();
     const requiereSesion = !['bienvenida', 'login', 'registro'].includes(idActiva);
     if (requiereSesion && !API.getToken()) idActiva = 'bienvenida';
 
@@ -145,7 +146,10 @@ function mostrarPantalla(idActiva) {
     document.querySelectorAll('.pantalla').forEach((pantalla) => {
         pantalla.classList.toggle('activa', pantalla.id === `pantalla-${idActiva}`);
     });
-
+    const nav = document.querySelector('.bottom-nav');
+    if (nav) {
+        nav.hidden = !navVisible;
+    }
     const nav = document.getElementById('menu-inferior');
     const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
     const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar', 'ajustes'].includes(idActiva);
@@ -933,7 +937,34 @@ async function iniciarEscaneoQR() {
     }
 }
 
+function abrirMenuLateral() {
+    const drawer = document.getElementById('side-drawer');
+    const overlay = document.getElementById('drawer-overlay');
+    if (!drawer || !overlay) return;
+    overlay.hidden = false;
+    drawer.classList.add('open');
+    drawer.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarMenuLateral() {
+    const drawer = document.getElementById('side-drawer');
+    const overlay = document.getElementById('drawer-overlay');
+    if (!drawer || !overlay) return;
+    drawer.classList.remove('open');
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.hidden = true;
+}
+
 function configurarEventos() {
+    const btnAbrirMenu = document.getElementById('btn-abrir-menu');
+    if (btnAbrirMenu) btnAbrirMenu.addEventListener('click', abrirMenuLateral);
+    
+    const btnCerrarMenu = document.getElementById('btn-cerrar-menu');
+    if (btnCerrarMenu) btnCerrarMenu.addEventListener('click', cerrarMenuLateral);
+    
+    const drawerOverlay = document.getElementById('drawer-overlay');
+    if (drawerOverlay) drawerOverlay.addEventListener('click', cerrarMenuLateral);
+ 
     document.addEventListener('click', (evento) => {
         const navegacion = evento.target.closest('[data-screen]');
         if (navegacion) {
