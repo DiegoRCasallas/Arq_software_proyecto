@@ -132,7 +132,7 @@ function mostrarPantalla(idActiva) {
 
     const nav = document.getElementById('menu-inferior');
     const esPantallaAcceso = ['bienvenida', 'login', 'registro'].includes(idActiva);
-    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar'].includes(idActiva);
+    const navVisible = Boolean(API.getToken()) && !esPantallaAcceso && !['diagnostico', 'minijuego', 'conectar', 'ajustes'].includes(idActiva);
     nav.hidden = !navVisible;
     document.body.classList.toggle('diagnosis-active', idActiva === 'diagnostico');
     document.querySelectorAll('.nav-item').forEach((item) => {
