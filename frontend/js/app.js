@@ -735,10 +735,17 @@ function detenerCamaraQR() {
         qrStream = null;
     }
     const video = document.getElementById('qr-camera');
+    const cameraFrame = document.getElementById('qr-camera-frame');
+    const zoomControl = document.getElementById('qr-zoom-control');
     if (video) {
         video.pause();
         video.srcObject = null;
-        video.hidden = true;
+    }
+    if (cameraFrame) {
+        cameraFrame.hidden = true;
+    }
+    if (zoomControl) {
+        zoomControl.hidden = true;
     }
 }
 
@@ -848,7 +855,7 @@ async function iniciarEscaneoQR() {
     const intento = ++qrPairingAttempt;
     btnEscanear.disabled = true;
     btnCancelar.hidden = false;
-    estadoQR.textContent = 'Apunta la camara al QR que muestra el ESP32.';
+    estadoQR.textContent = 'Apunta la camara al QR y ajusta el zoom para acercarlo.';
     try {
         const detector = new BarcodeDetector({ formats: ['qr_code'] });
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -861,19 +868,47 @@ async function iniciarEscaneoQR() {
         }
         qrStream = stream;
         const video = document.getElementById('qr-camera');
+        const cameraFrame = document.getElementById('qr-camera-frame');
+        const zoomControl = document.getElementById('qr-zoom-control');
+        const zoomInput = document.getElementById('qr-zoom');
         video.srcObject = qrStream;
-        video.hidden = false;
+        cameraFrame.hidden = false;
+        zoomControl.hidden = false;
+        cameraFrame.style.setProperty('--qr-zoom', zoomInput.value);
         await video.play();
         if (video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
             await new Promise((resolve) => {
                 video.addEventListener('loadeddata', resolve, { once: true });
             });
         }
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        if (!context) {
+            throw new Error('No se pudo preparar la imagen para leer el QR.');
+        }
 
         const buscarQR = async () => {
             if (intento !== qrPairingAttempt) return;
             try {
-                const codigos = await detector.detect(video);
+                const width = video.videoWidth;
+                const height = video.videoHeight;
+                canvas.width = width;
+                canvas.height = height;
+                const zoom = Number(zoomInput.value);
+                const cropWidth = width / zoom;
+                const cropHeight = height / zoom;
+                context.drawImage(
+                    video,
+                    (width - cropWidth) / 2,
+                    (height - cropHeight) / 2,
+                    cropWidth,
+                    cropHeight,
+                    0,
+                    0,
+                    width,
+                    height
+                );
+                const codigos = await detector.detect(canvas);
                 if (codigos.length) {
                     await procesarQRVinculacion(codigos[0].rawValue, intento);
                     return;
@@ -993,6 +1028,12 @@ function configurarEventos() {
     });
 
     document.getElementById('btn-escanear-qr').addEventListener('click', iniciarEscaneoQR);
+    document.getElementById('qr-zoom').addEventListener('input', (evento) => {
+        const zoom = Number(evento.currentTarget.value);
+        document.getElementById('qr-camera-frame').style.setProperty('--qr-zoom', zoom);
+        document.getElementById('qr-zoom-value').value =
+            `${zoom.toFixed(2).replace(/\.?0+$/, '')}×`;
+    });
     document.getElementById('btn-cancelar-vinculacion').addEventListener(
         'click',
         () => cancelarVinculacionQR()
