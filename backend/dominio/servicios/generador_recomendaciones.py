@@ -12,8 +12,14 @@ from dominio.valores.estado_parametro import EstadoParametro
 
 _MENSAJES: dict[str, dict[EstadoParametro, str]] = {
     "humedad": {
-        EstadoParametro.BAJO: "Se recomienda aumentar la humedad del sustrato (regar la planta).",
-        EstadoParametro.ALTO: "Se recomienda reducir el riego para evitar exceso de humedad.",
+        EstadoParametro.BAJO: (
+            "La humedad ambiental está baja para esta especie. "
+            "Pulveriza agua cerca de las hojas o coloca un plato con agua y piedras bajo la matera."
+        ),
+        EstadoParametro.ALTO: (
+            "La humedad ambiental es demasiado alta. "
+            "Ubica la planta en un espacio más ventilado para evitar hongos en las hojas."
+        ),
     },
     "luz": {
         EstadoParametro.BAJO: "Se recomienda ubicar la planta en un lugar con más luz.",
