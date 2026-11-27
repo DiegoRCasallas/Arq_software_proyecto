@@ -65,11 +65,12 @@
         </section>
 
         <section id="pantalla-mis-plantas" class="pantalla app-screen">
-            <header class="page-header">
+            <header class="app-header">
                 <div class="brand-lockup"><span class="brand-mark-small" aria-hidden="true">🌿</span><span>PlantTech</span></div>
                 <p class="eyebrow header-eyebrow">TU JARDÍN EN CASA</p>
                 <h1>Mis plantas</h1>
                 <p class="header-subtitle">Un vistazo a cómo se sienten hoy.</p>
+                <button class="header-icon-btn" type="button" data-screen="ajustes" aria-label="Ajustes">⚙️</button>
             </header>
             <div class="section-heading">
                 <h2>Tu colección</h2>
@@ -202,9 +203,10 @@
         </section>
 
         <section id="pantalla-ajustes" class="pantalla app-screen">
-            <header class="page-header compact-header">
-                <p class="eyebrow header-eyebrow">PREFERENCIAS</p>
+            <header class="subpage-header">
+                <button class="back-button" type="button" data-screen="mis-plantas" aria-label="Volver a mis plantas">←</button>
                 <h1>Ajustes</h1>
+                <span class="header-spacer" aria-hidden="true"></span>
             </header>
             <section class="content-card settings-card">
                 <p class="eyebrow">CUENTA</p>
@@ -223,7 +225,6 @@
     <nav class="bottom-nav" id="menu-inferior" aria-label="Navegación principal" hidden>
         <button class="nav-item" type="button" data-screen="mis-plantas"><span aria-hidden="true">♧</span><span>Plantas</span></button>
         <button class="nav-item" type="button" data-screen="add-planta"><span aria-hidden="true">＋</span><span>Añadir</span></button>
-        <button class="nav-item" type="button" data-screen="ajustes"><span aria-hidden="true">⚙</span><span>Ajustes</span></button>
     </nav>
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
 
