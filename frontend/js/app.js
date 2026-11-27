@@ -286,10 +286,17 @@ async function cargarDetalles() {
                 <h2>${escapeHTML(planta.apodo || planta.especie)}</h2>
                 <span class="connection-note ${planta.dispositivo_conectado ? 'connected' : ''}">${planta.dispositivo_conectado ? '● Dispositivo conectado' : '○ Dispositivo pendiente de conexión'}</span>
                 <div class="gamif-progress">
+                    <div class="gamif-etapa-row">
+                        <span class="etapa-badge">${etapa.icono} ${escapeHTML(etapa.titulo)}</span>
+                    </div>
                     <div class="gamif-progress-header">
-                        <strong><span class="etapa-badge">${etapa.icono} ${escapeHTML(etapa.titulo)}</span> · Nivel ${escapeHTML(gamif.nivel)}</strong>
+                        <strong>Nivel ${escapeHTML(gamif.nivel)}</strong>
                         <span>${escapeHTML(gamif.xp_nivel_actual)} / ${escapeHTML(gamif.xp_siguiente_nivel)} XP</span>
                     </div>
+                    <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="gamif-xp-fill" style="width: ${escapeHTML(gamif.porcentaje_nivel)}%;"></div>
+                    </div>
+                </div>
                     <div class="gamif-xp-bar" role="progressbar" aria-valuenow="${escapeHTML(gamif.porcentaje_nivel)}" aria-valuemin="0" aria-valuemax="100">
                         <div class="gamif-xp-fill" style="width: ${escapeHTML(gamif.porcentaje_nivel)}%;"></div>
                     </div>
