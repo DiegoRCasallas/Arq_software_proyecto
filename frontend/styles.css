@@ -1171,52 +1171,133 @@ select:focus-visible {
         transition-duration: 0.01ms !important;
     }
     
-/* === Botón de Ajustes en el encabezado === */
-.app-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.header-icon-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: rgba(255, 255, 255, 0.16);
-    color: #ffffff;
-    font-size: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-
-/* === Barra inferior con 2 botones (sin choque con Netlify) === */
-.bottom-nav {
-    justify-content: flex-start;
-    gap: 28px;
-    padding: 10px 24px;
-    height: auto;
-}
-
-.app-shell {
-    padding-bottom: 90px;
-}
-
-.app-shell {
-    padding-bottom: 145px;
+/* === Insignia de etapa separada del nivel/XP === */
+.gamif-etapa-row {
+    margin-bottom: 6px;
 }
 
 .etapa-badge {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    background: #e6f4ec;
+    gap: 5px;
+    background: #dff3e7;
     color: #166534;
     padding: 3px 10px;
     border-radius: 999px;
     font-weight: 700;
-    font-size: 0.85rem;
-    flex-wrap: wrap; gap: 6px;
+    font-size: 0.82rem;
+}
+
+.gamif-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+    font-size: 0.88rem;
+}
+
+/* === Barra superior y Menú Lateral (Drawer) === */
+.top-bar-menu {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.brand-title {
+    font-weight: 800;
+    font-size: 1.05rem;
+    color: #1f5e3b;
+}
+
+.menu-toggle-btn {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid #d5e6dc;
+    background: #ffffff;
+    color: #1f5e3b;
+    font-size: 1.35rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 900;
+}
+
+.side-drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 265px;
+    max-width: 80vw;
+    background: #ffffff;
+    z-index: 1000;
+    padding: 20px 16px;
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.15);
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.side-drawer.open {
+    transform: translateX(0);
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e5ede8;
+    font-size: 1.1rem;
+    color: #1f5e3b;
+}
+
+.drawer-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: #4b5563;
+    cursor: pointer;
+    padding: 6px;
+}
+
+.drawer-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.drawer-item {
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: none;
+    background: #f4f9f6;
+    color: #1b4332;
+    font-size: 0.98rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.drawer-item:active,
+.drawer-item:hover {
+    background: #dff3e7;
+}
+
+.app-shell {
+    padding-bottom: 72px;
 }
