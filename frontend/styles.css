@@ -1171,9 +1171,37 @@ select:focus-visible {
         transition-duration: 0.01ms !important;
     }
     
-/* === Despejar barra inferior del aviso de Netlify === */
+/* === Botón de Ajustes en el encabezado === */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.header-icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+    font-size: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+/* === Barra inferior con 2 botones (sin choque con Netlify) === */
 .bottom-nav {
-    padding-bottom: 62px;
+    justify-content: flex-start;
+    gap: 28px;
+    padding: 10px 24px;
+    height: auto;
+}
+
+.app-shell {
+    padding-bottom: 90px;
 }
 
 .app-shell {
